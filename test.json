@@ -1,0 +1,69 @@
+{
+    "panels": [
+        {
+            "name": "Pods",
+            "group": "",
+            "version": "v1",
+            "kind": "Pod",
+            "type": "table",
+            "columns": [
+                {
+                    "header": "Namespace",
+                    "path": "metadata.namespace",
+                    "width": 20
+                },
+                {
+                    "header": "Name",
+                    "path": "metadata.name",
+                    "width": 40
+                },
+                {
+                    "header": "Phase",
+                    "path": "status.phase",
+                    "width": 10
+                }
+            ]
+        },
+        {
+            "name": "Deployments",
+            "group": "apps",
+            "version": "v1",
+            "kind": "Deployment",
+            "type": "table",
+            "columns": [
+                {
+                    "header": "Namespace",
+                    "path": "metadata.namespace",
+                    "width": 20
+                },
+                {
+                    "header": "Name",
+                    "path": "metadata.name",
+                    "width": 40
+                }
+            ]
+        },
+        {
+            "name": "Kube API Server",
+            "group": "",
+            "version": "v1",
+            "kind": "Pod",
+            "type": "item",
+            "key": {
+                "namespace": "kube-system",
+                "name": "kube-apiserver-kind-control-plane"
+            } 
+        },
+        {
+            "name": "Kube API Server Logs",
+            "group": "",
+            "version": "v1",
+            "kind": "Pod",
+            "type": "logs",
+            "key": {
+                "namespace": "kube-system",
+                "name": "kube-apiserver-kind-control-plane"
+            } 
+        }
+    ]
+}
