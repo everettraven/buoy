@@ -6,10 +6,10 @@ import (
 	"fmt"
 
 	"github.com/charmbracelet/bubbles/table"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/everettraven/buoy/pkg/charm/models"
 	"github.com/everettraven/buoy/pkg/charm/styles"
 	"github.com/everettraven/buoy/pkg/types"
-	"github.com/treilik/bubbleboxer"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -21,20 +21,16 @@ type Table struct {
 	Client client.Client
 }
 
-func (t *Table) Node(panel types.Panel, bxr *bubbleboxer.Boxer) (bubbleboxer.Node, error) {
+func (t *Table) Model(panel types.Panel) (tea.Model, error) {
 	tab := types.Table{}
 	err := json.Unmarshal(panel.Blob, &tab)
 	if err != nil {
-		return bubbleboxer.Node{}, fmt.Errorf("unmarshalling panel to table type: %s", err)
+		return nil, fmt.Errorf("unmarshalling panel to table type: %s", err)
 	}
-	mw, err := modelWrapperForTablePanel(t.Client, tab)
-	if err != nil {
-		return bubbleboxer.Node{}, fmt.Errorf("getting table widget: %s", err)
-	}
-	return nodeForModelWrapper(tab.Name, mw, bxr)
+	return modelWrapperForTablePanel(t.Client, tab)
 }
 
-func modelWrapperForTablePanel(cli client.Client, tablePanel types.Table) (*models.ModelWrapper, error) {
+func modelWrapperForTablePanel(cli client.Client, tablePanel types.Table) (*models.Panel, error) {
 	panelItems := &unstructured.UnstructuredList{}
 	panelItems.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   tablePanel.Group,
@@ -73,11 +69,12 @@ func modelWrapperForTablePanel(cli client.Client, tablePanel types.Table) (*mode
 		table.WithHeight(height),
 	)
 
-	tw := &models.ModelWrapper{
+	tw := &models.Panel{
 		Model:   t,
 		UpdateF: models.TableUpdateFunc,
 		HeightF: models.TableHeightFunc,
+		Name:    tablePanel.Name,
 	}
-	tw.SetStyle(styles.FocusedModelStyle)
+	tw.SetStyle(styles.ModelStyle)
 	return tw, nil
 }

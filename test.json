@@ -64,6 +64,17 @@
                 "namespace": "kube-system",
                 "name": "kube-apiserver-kind-control-plane"
             } 
+        },
+        {
+            "name": "Kube API Server Logs Dupe",
+            "group": "",
+            "version": "v1",
+            "kind": "Pod",
+            "type": "logs",
+            "key": {
+                "namespace": "kube-system",
+                "name": "kube-apiserver-kind-control-plane"
+            } 
         }
     ]
 }

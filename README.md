@@ -46,6 +46,7 @@ The `test.json` file contains samples for each of the different panel types that
 - `ctrl+c`, `q` will quit the program and exit the tui
 - `tab` will switch the active panel
 - up and down arrow keys and mouse scroll will move up and down in the active panel
+- `esc` toggles focus on the scrollable panel viewer
 
 ## Contributing
 

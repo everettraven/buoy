@@ -1,10 +1,13 @@
 package models
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/everettraven/buoy/pkg/charm/styles"
 )
 
 type Viewable interface {
@@ -73,9 +76,9 @@ var TableUpdateFunc UpdateFunc = func(model interface{}, msg tea.Msg) (interface
 	return tab, cmd
 }
 
-// ModelWrapper is a helper to wrap model types used by
+// Model is a helper to wrap model types used by
 // buoy into a tea.Model interface implementation
-type ModelWrapper struct {
+type Panel struct {
 	Model   interface{}
 	UpdateF UpdateFunc
 	HeightF HeightFunc
@@ -83,31 +86,35 @@ type ModelWrapper struct {
 	style   lipgloss.Style
 }
 
-func (m *ModelWrapper) Init() tea.Cmd {
+func (m *Panel) Init() tea.Cmd {
 	if init, ok := m.Model.(Initable); ok {
 		return init.Init()
 	}
 	return nil
 }
 
-func (m *ModelWrapper) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *Panel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.Model, cmd = m.UpdateF(m.Model, msg)
 	return m, cmd
 }
 
-func (m *ModelWrapper) View() string {
+func (m *Panel) View() string {
 	if view, ok := m.Model.(Viewable); ok {
-		return m.style.Render(view.View())
+		var out strings.Builder
+		out.WriteString(styles.TitleStyle.Render(m.Name))
+		out.WriteString("\n")
+		out.WriteString(m.style.Render(view.View()))
+		return out.String()
 	}
 
 	return "model not a Viewable"
 }
 
-func (m *ModelWrapper) Height() int {
+func (m *Panel) Height() int {
 	return m.HeightF(m.Model)
 }
 
-func (m *ModelWrapper) SetStyle(style lipgloss.Style) {
+func (m *Panel) SetStyle(style lipgloss.Style) {
 	m.style = style
 }

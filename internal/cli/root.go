@@ -11,7 +11,6 @@ import (
 	"github.com/everettraven/buoy/pkg/paneler"
 	"github.com/everettraven/buoy/pkg/types"
 	"github.com/spf13/cobra"
-	"github.com/treilik/bubbleboxer"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
@@ -42,31 +41,16 @@ func run(file string) error {
 		log.Fatalf("configuring paneler: %s", err)
 	}
 
-	boxer := &bubbleboxer.Boxer{}
-	leafs := []bubbleboxer.Node{}
-
+	panelModels := []tea.Model{}
 	for _, panel := range dash.Panels {
-		leaf, err := p.Node(panel, boxer)
+		mod, err := p.Model(panel)
 		if err != nil {
-			log.Fatalf("getting leaf node for panel %q: %s", panel.Name, err)
+			log.Fatalf("getting model for panel %q: %s", panel.Name, err)
 		}
-		leafs = append(leafs, leaf)
+		panelModels = append(panelModels, mod)
 	}
 
-	boxer.LayoutTree = bubbleboxer.Node{
-		VerticalStacked: true,
-		SizeFunc: func(node bubbleboxer.Node, widthOrHeight int) []int {
-			sizes := []int{}
-			for _, children := range node.Children {
-				sizes = append(sizes, children.SizeFunc(children, children.GetHeight())...)
-			}
-			return sizes
-		},
-		Children: leafs,
-	}
-
-	// for now only render the first table
-	m := &models.Dashboard{Tui: boxer, Panels: dash.Panels}
+	m := &models.Dashboard{Panels: panelModels}
 	if _, err := tea.NewProgram(m, tea.WithAltScreen()).Run(); err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)

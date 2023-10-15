@@ -6,10 +6,10 @@ import (
 	"fmt"
 
 	"github.com/charmbracelet/bubbles/viewport"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/everettraven/buoy/pkg/charm/models"
 	"github.com/everettraven/buoy/pkg/charm/styles"
 	"github.com/everettraven/buoy/pkg/types"
-	"github.com/treilik/bubbleboxer"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -22,20 +22,16 @@ type Item struct {
 	Client client.Client
 }
 
-func (t *Item) Node(panel types.Panel, bxr *bubbleboxer.Boxer) (bubbleboxer.Node, error) {
+func (t *Item) Model(panel types.Panel) (tea.Model, error) {
 	item := types.Item{}
 	err := json.Unmarshal(panel.Blob, &item)
 	if err != nil {
-		return bubbleboxer.Node{}, fmt.Errorf("unmarshalling panel to table type: %s", err)
+		return nil, fmt.Errorf("unmarshalling panel to table type: %s", err)
 	}
-	mw, err := modelWrapperForItemPanel(t.Client, item)
-	if err != nil {
-		return bubbleboxer.Node{}, fmt.Errorf("getting table widget: %s", err)
-	}
-	return nodeForModelWrapper(item.Name, mw, bxr)
+	return modelWrapperForItemPanel(t.Client, item)
 }
 
-func modelWrapperForItemPanel(cli client.Client, itemPanel types.Item) (*models.ModelWrapper, error) {
+func modelWrapperForItemPanel(cli client.Client, itemPanel types.Item) (*models.Panel, error) {
 	item := &unstructured.Unstructured{}
 	item.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   itemPanel.Group,
@@ -60,12 +56,13 @@ func modelWrapperForItemPanel(cli client.Client, itemPanel types.Item) (*models.
 	}
 	vp.SetContent(string(itemYAML))
 
-	vpw := &models.ModelWrapper{
+	vpw := &models.Panel{
 		Model:   vp,
 		UpdateF: models.ViewportUpdateFunc,
 		HeightF: models.ViewportHeightFunc,
+		Name:    itemPanel.Name,
 	}
-	vpw.SetStyle(styles.FocusedModelStyle)
+	vpw.SetStyle(styles.ModelStyle)
 
 	return vpw, nil
 }
