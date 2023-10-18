@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/viewport"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/everettraven/buoy/pkg/charm/models"
 	"github.com/everettraven/buoy/pkg/charm/styles"
 	"github.com/everettraven/buoy/pkg/types"
-	"github.com/treilik/bubbleboxer"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -22,20 +22,16 @@ type Log struct {
 	KubeClient *kubernetes.Clientset
 }
 
-func (t *Log) Node(panel types.Panel, bxr *bubbleboxer.Boxer) (bubbleboxer.Node, error) {
+func (t *Log) Model(panel types.Panel) (tea.Model, error) {
 	log := types.Logs{}
 	err := json.Unmarshal(panel.Blob, &log)
 	if err != nil {
-		return bubbleboxer.Node{}, fmt.Errorf("unmarshalling panel to table type: %s", err)
+		return nil, fmt.Errorf("unmarshalling panel to table type: %s", err)
 	}
-	mw, err := modelWrapperForLogPanel(t.KubeClient, log)
-	if err != nil {
-		return bubbleboxer.Node{}, fmt.Errorf("getting table widget: %s", err)
-	}
-	return nodeForModelWrapper(log.Name, mw, bxr)
+	return modelWrapperForLogPanel(t.KubeClient, log)
 }
 
-func modelWrapperForLogPanel(kc *kubernetes.Clientset, logsPanel types.Logs) (*models.ModelWrapper, error) {
+func modelWrapperForLogPanel(kc *kubernetes.Clientset, logsPanel types.Logs) (*models.Panel, error) {
 	//TODO: expand this beyond just a pod
 	req := kc.CoreV1().Pods(logsPanel.Key.Namespace).GetLogs(logsPanel.Key.Name, &v1.PodLogOptions{})
 	rc, err := req.Stream(context.Background())
@@ -73,12 +69,13 @@ func modelWrapperForLogPanel(kc *kubernetes.Clientset, logsPanel types.Logs) (*m
 
 	vp.SetContent(logsBuilder.String())
 
-	vpw := &models.ModelWrapper{
+	vpw := &models.Panel{
 		Model:   vp,
 		UpdateF: models.ViewportUpdateFunc,
 		HeightF: models.ViewportHeightFunc,
+		Name:    logsPanel.Name,
 	}
-	vpw.SetStyle(styles.FocusedModelStyle)
+	vpw.SetStyle(styles.ModelStyle)
 
 	return vpw, nil
 }

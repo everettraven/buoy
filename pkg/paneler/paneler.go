@@ -3,26 +3,26 @@ package paneler
 import (
 	"fmt"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/everettraven/buoy/pkg/types"
-	"github.com/treilik/bubbleboxer"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type Paneler interface {
-	Node(types.Panel, *bubbleboxer.Boxer) (bubbleboxer.Node, error)
+	Model(types.Panel) (tea.Model, error)
 }
 
 type paneler struct {
 	panelerRegistry map[string]Paneler
 }
 
-func (p *paneler) Node(panel types.Panel, bxr *bubbleboxer.Boxer) (bubbleboxer.Node, error) {
+func (p *paneler) Model(panel types.Panel) (tea.Model, error) {
 	if p, ok := p.panelerRegistry[panel.Type]; ok {
-		return p.Node(panel, bxr)
+		return p.Model(panel)
 	}
-	return bubbleboxer.Node{}, fmt.Errorf("panel %q has unknown panel type: %q", panel.Name, panel.Type)
+	return nil, fmt.Errorf("panel %q has unknown panel type: %q", panel.Name, panel.Type)
 }
 
 func NewDefaultPaneler(cfg *rest.Config) (Paneler, error) {
