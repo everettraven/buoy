@@ -10,8 +10,3 @@ var TitleStyle = lipgloss.NewStyle().
 var ModelStyle = lipgloss.NewStyle().
 	Align(lipgloss.Center, lipgloss.Center).
 	BorderStyle(lipgloss.HiddenBorder())
-
-var FocusedModelStyle = lipgloss.NewStyle().
-	Align(lipgloss.Center, lipgloss.Center).
-	BorderStyle(lipgloss.BlockBorder()).
-	BorderForeground(lipgloss.Color("78"))
