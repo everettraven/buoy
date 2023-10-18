@@ -5,7 +5,7 @@
 > [!NOTE]
 > This project is in the extremely early stages of development and is a hobby project. Use at your own risk.
 
-[![asciicast](https://asciinema.org/a/1J9xkpgc4Q2E7fCDh0wkDdWKe.svg)](https://asciinema.org/a/1J9xkpgc4Q2E7fCDh0wkDdWKe)
+[![asciicast](https://asciinema.org/a/PC5szfOY4kYEm3YvIKTixO3lg.svg)](https://asciinema.org/a/PC5szfOY4kYEm3YvIKTixO3lg)
 
 ## Quickstart
 
