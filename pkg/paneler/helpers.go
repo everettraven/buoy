@@ -1,25 +1,20 @@
 package paneler
 
 import (
+	"fmt"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-func getDotNotationValue(item map[string]interface{}, dotPath string) interface{} {
+func getDotNotationValue(item map[string]interface{}, dotPath string) (interface{}, error) {
 	keys := strings.Split(dotPath, ".")
-	var value interface{}
-	curMap := item
-	for _, key := range keys {
-		val, ok := curMap[key]
-		if !ok {
-			return nil
-		}
-		newMap, ok := val.(map[string]interface{})
-		if !ok {
-			value = val
-			break
-		}
-		curMap = newMap
+	val, exist, err := unstructured.NestedFieldNoCopy(item, keys...)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching nested field %q: %w", dotPath, err)
 	}
-
-	return value
+	if !exist {
+		return nil, fmt.Errorf("nested field %q not found", dotPath)
+	}
+	return val, nil
 }

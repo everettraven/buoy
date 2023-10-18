@@ -51,7 +51,22 @@ func modelWrapperForTablePanel(cli client.Client, tablePanel types.Table) (*mode
 	for _, item := range panelItems.Items {
 		row := []string{}
 		for _, column := range tablePanel.Columns {
-			row = append(row, getDotNotationValue(item.Object, column.Path).(string))
+			val, err := getDotNotationValue(item.Object, column.Path)
+			if err != nil {
+				return nil, err
+			}
+			switch val := val.(type) {
+			case string:
+				row = append(row, val)
+			case map[string]interface{}:
+				data, err := json.Marshal(val)
+				if err != nil {
+					return nil, fmt.Errorf("marshalling object data to string: %w", err)
+				}
+				row = append(row, string(data))
+			case int, int8, int16, int32, int64, float32, float64, bool:
+				row = append(row, fmt.Sprint(val))
+			}
 		}
 		rows = append(rows, row)
 	}
