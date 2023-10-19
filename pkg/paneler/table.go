@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/charmbracelet/bubbles/table"
+	tbl "github.com/calyptia/go-bubble-table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/everettraven/buoy/pkg/charm/models"
 	"github.com/everettraven/buoy/pkg/charm/styles"
@@ -42,14 +42,16 @@ func modelWrapperForTablePanel(cli client.Client, tablePanel types.Table) (*mode
 		return nil, fmt.Errorf("fetching items for panel %q: %s", tablePanel.Name, err)
 	}
 
-	columns := []table.Column{}
+	columns := []string{}
+	width := 0
 	for _, column := range tablePanel.Columns {
-		columns = append(columns, table.Column{Title: column.Header, Width: column.Width})
+		columns = append(columns, column.Header)
+		width += column.Width
 	}
 
-	rows := []table.Row{}
+	rows := []tbl.Row{}
 	for _, item := range panelItems.Items {
-		row := []string{}
+		row := tbl.SimpleRow{}
 		for _, column := range tablePanel.Columns {
 			val, err := getDotNotationValue(item.Object, column.Path)
 			if err != nil {
@@ -64,30 +66,25 @@ func modelWrapperForTablePanel(cli client.Client, tablePanel types.Table) (*mode
 					return nil, fmt.Errorf("marshalling object data to string: %w", err)
 				}
 				row = append(row, string(data))
-			case int, int8, int16, int32, int64, float32, float64, bool:
+			default:
 				row = append(row, fmt.Sprint(val))
 			}
 		}
 		rows = append(rows, row)
 	}
 
-	height := 5
+	height := 6
 
 	if len(rows) < height {
-		height = len(rows)
+		height = len(rows) + 1
 	}
 
-	t := table.New(
-		table.WithColumns(columns),
-		table.WithRows(rows),
-		table.WithFocused(true),
-		table.WithHeight(height),
-	)
+	t := tbl.New(columns, 100, height)
+	t.SetRows(rows)
 
 	tw := &models.Panel{
 		Model:   t,
 		UpdateF: models.TableUpdateFunc,
-		HeightF: models.TableHeightFunc,
 		Name:    tablePanel.Name,
 	}
 	tw.SetStyle(styles.ModelStyle)

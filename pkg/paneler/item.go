@@ -59,7 +59,6 @@ func modelWrapperForItemPanel(cli client.Client, itemPanel types.Item) (*models.
 	vpw := &models.Panel{
 		Model:   vp,
 		UpdateF: models.ViewportUpdateFunc,
-		HeightF: models.ViewportHeightFunc,
 		Name:    itemPanel.Name,
 	}
 	vpw.SetStyle(styles.ModelStyle)

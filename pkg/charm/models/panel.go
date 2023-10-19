@@ -3,7 +3,7 @@ package models
 import (
 	"strings"
 
-	"github.com/charmbracelet/bubbles/table"
+	tbl "github.com/calyptia/go-bubble-table"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -37,41 +37,12 @@ var ViewportUpdateFunc UpdateFunc = func(model interface{}, msg tea.Msg) (interf
 	return vp, cmd
 }
 
-var ViewportHeightFunc HeightFunc = func(model interface{}) int {
-	vp, ok := model.(viewport.Model)
-	if !ok {
-		return 0
-	}
-
-	return vp.Height + 1
-}
-
-var TableHeightFunc HeightFunc = func(model interface{}) int {
-	tab, ok := model.(table.Model)
-	if !ok {
-		return 0
-	}
-
-	return tab.Height() + 1
-}
-
 var TableUpdateFunc UpdateFunc = func(model interface{}, msg tea.Msg) (interface{}, tea.Cmd) {
-	tab, ok := model.(table.Model)
+	tab, ok := model.(tbl.Model)
 	if !ok {
 		return model, tea.Println("model not of type table.Model!")
 	}
 	var cmd tea.Cmd
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "esc":
-			if tab.Focused() {
-				tab.Blur()
-			} else {
-				tab.Focus()
-			}
-		}
-	}
 	tab, cmd = tab.Update(msg)
 	return tab, cmd
 }
@@ -109,10 +80,6 @@ func (m *Panel) View() string {
 	}
 
 	return "model not a Viewable"
-}
-
-func (m *Panel) Height() int {
-	return m.HeightF(m.Model)
 }
 
 func (m *Panel) SetStyle(style lipgloss.Style) {
