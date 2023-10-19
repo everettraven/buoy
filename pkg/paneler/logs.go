@@ -72,7 +72,6 @@ func modelWrapperForLogPanel(kc *kubernetes.Clientset, logsPanel types.Logs) (*m
 	vpw := &models.Panel{
 		Model:   vp,
 		UpdateF: models.ViewportUpdateFunc,
-		HeightF: models.ViewportHeightFunc,
 		Name:    logsPanel.Name,
 	}
 	vpw.SetStyle(styles.ModelStyle)

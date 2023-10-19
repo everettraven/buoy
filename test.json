@@ -21,6 +21,11 @@
                     "header": "Phase",
                     "path": "status.phase",
                     "width": 10
+                },
+                {
+                    "header": "Labels",
+                    "path": "metadata.labels",
+                    "width": 20
                 }
             ]
         },
@@ -40,6 +45,11 @@
                     "header": "Name",
                     "path": "metadata.name",
                     "width": 40
+                },
+                {
+                    "header": "Replicas",
+                    "path": "status.replicas",
+                    "width": 10
                 }
             ]
         },
