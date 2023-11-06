@@ -18,7 +18,6 @@ type Namer interface {
 type Dashboard struct {
 	// Title is the name of the Dashboard
 	Title  string
-	tabs   []string
 	Panels []tea.Model
 	state  int
 }
