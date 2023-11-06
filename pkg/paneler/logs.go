@@ -1,16 +1,16 @@
 package paneler
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"strings"
+	"sync"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/everettraven/buoy/pkg/charm/models"
-	"github.com/everettraven/buoy/pkg/charm/styles"
+	"github.com/everettraven/buoy/pkg/charm/models/panels"
 	"github.com/everettraven/buoy/pkg/types"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -28,26 +28,47 @@ func (t *Log) Model(panel types.Panel) (tea.Model, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unmarshalling panel to table type: %s", err)
 	}
-	return modelWrapperForLogPanel(t.KubeClient, log)
+	logItem := modelWrapperForLogPanel(t.KubeClient, log)
+	go streamLogs(t.KubeClient, log, logItem)
+	return logItem, nil
 }
 
-func modelWrapperForLogPanel(kc *kubernetes.Clientset, logsPanel types.Logs) (*models.Panel, error) {
+func modelWrapperForLogPanel(kc *kubernetes.Clientset, logsPanel types.Logs) *panels.Logs {
+	vp := viewport.New(100, 20)
+	vpw := panels.NewLogs(logsPanel.Name, vp)
+	return vpw
+}
+
+func streamLogs(kc *kubernetes.Clientset, logsPanel types.Logs, logItem *panels.Logs) error {
 	//TODO: expand this beyond just a pod
-	req := kc.CoreV1().Pods(logsPanel.Key.Namespace).GetLogs(logsPanel.Key.Name, &v1.PodLogOptions{})
+	req := kc.CoreV1().Pods(logsPanel.Key.Namespace).GetLogs(logsPanel.Key.Name, &v1.PodLogOptions{
+		Container: logsPanel.Container,
+		Follow:    true,
+	})
+
 	rc, err := req.Stream(context.Background())
 	if err != nil {
-		return nil, fmt.Errorf("fetching logs for %s/%s: %w", logsPanel.Key.Namespace, logsPanel.Key.Name, err)
+		return fmt.Errorf("fetching logs for %s/%s: %w", logsPanel.Key.Namespace, logsPanel.Key.Name, err)
 	}
 	defer rc.Close()
 
-	logs, err := io.ReadAll(rc)
-	if err != nil {
-		return nil, fmt.Errorf("reading logs from stream: %w", err)
-	}
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 
-	// TODO: Sort out word wrapping
-	vp := viewport.New(100, 8)
+	go func() {
+		defer wg.Done()
+		scanner := bufio.NewScanner(rc)
+		for scanner.Scan() {
+			logs := wrapLogs(scanner.Bytes())
+			logItem.AddContent(logs)
+		}
+	}()
 
+	wg.Wait()
+	return nil
+}
+
+func wrapLogs(logs []byte) string {
 	logStr := string(logs)
 	splitLogs := strings.Split(logStr, "\n")
 	var logsBuilder strings.Builder
@@ -66,15 +87,5 @@ func modelWrapperForLogPanel(kc *kubernetes.Clientset, logsPanel types.Logs) (*m
 		}
 		logsBuilder.WriteString("\n")
 	}
-
-	vp.SetContent(logsBuilder.String())
-
-	vpw := &models.Panel{
-		Model:   vp,
-		UpdateF: models.ViewportUpdateFunc,
-		Name:    logsPanel.Name,
-	}
-	vpw.SetStyle(styles.ModelStyle)
-
-	return vpw, nil
+	return logsBuilder.String()
 }

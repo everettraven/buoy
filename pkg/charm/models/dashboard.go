@@ -1,22 +1,26 @@
 package models
 
 import (
-	"strings"
+	"fmt"
 
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/everettraven/buoy/pkg/charm/styles"
 )
+
+type Namer interface {
+	Name() string
+}
 
 // Dashboard is a tea.Model implementation
 // for viewing Kubernetes information based
 // on a declarative dashboard description
 type Dashboard struct {
 	// Title is the name of the Dashboard
-	Title    string
-	Panels   []tea.Model
-	state    int
-	vp       viewport.Model
-	vpActive bool
+	Title  string
+	tabs   []string
+	Panels []tea.Model
+	state  int
 }
 
 func (d *Dashboard) Init() tea.Cmd { return nil }
@@ -33,28 +37,26 @@ func (d *Dashboard) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if d.state > len(d.Panels)-1 {
 				d.state = 0
 			}
-		case "esc":
-			d.vpActive = !d.vpActive
 		}
-	case tea.WindowSizeMsg:
-		d.vp = viewport.New(msg.Width, msg.Height)
 	}
 
-	if d.vpActive {
-		d.vp, cmd = d.vp.Update(msg)
-	} else {
-		d.Panels[d.state], cmd = d.Panels[d.state].Update(msg)
-	}
-
+	d.Panels[d.state], cmd = d.Panels[d.state].Update(msg)
 	return d, cmd
 }
 
 func (d *Dashboard) View() string {
-	var out strings.Builder
-	for _, panel := range d.Panels {
-		out.WriteString(panel.View())
-		out.WriteString("\n\n")
+	tabs := []string{}
+	for i, panel := range d.Panels {
+		if namer, ok := panel.(Namer); ok {
+			tabText := fmt.Sprintf("  %s  ", namer.Name())
+			if i == d.state {
+				tabs = append(tabs, styles.SelectedTitleStyle.Render(tabText))
+				continue
+			}
+
+			tabs = append(tabs, styles.TitleStyle.Render(tabText))
+		}
 	}
-	d.vp.SetContent(out.String())
-	return d.vp.View()
+	tabBlock := lipgloss.JoinHorizontal(0, tabs...)
+	return lipgloss.JoinVertical(0, tabBlock, d.Panels[d.state].View())
 }

@@ -6,9 +6,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-// TODO: Think about how to link panels to allow for
-// configurable layouts using the tree concept of bubble boxer
-
 const (
 	PanelTypeTable = "table"
 	PanelTypeItem  = "item"
@@ -56,5 +53,6 @@ type Item struct {
 
 type Logs struct {
 	PanelBase
-	Key types.NamespacedName
+	Key       types.NamespacedName
+	Container string `json:"container"`
 }

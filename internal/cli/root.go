@@ -24,9 +24,9 @@ var rootCommand = &cobra.Command{
 }
 
 func run(file string) error {
-	rawJson, err := os.ReadFile("test.json")
+	rawJson, err := os.ReadFile(file)
 	if err != nil {
-		log.Fatalf("reading test.json: %s", err)
+		log.Fatalf("reading file: %s", err)
 	}
 
 	dash := &types.Dashboard{}
