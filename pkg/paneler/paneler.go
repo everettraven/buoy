@@ -7,7 +7,6 @@ import (
 	"github.com/everettraven/buoy/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type Paneler interface {
@@ -26,20 +25,25 @@ func (p *paneler) Model(panel types.Panel) (tea.Model, error) {
 }
 
 func NewDefaultPaneler(cfg *rest.Config) (Paneler, error) {
-	crClient, err := client.New(cfg, client.Options{})
-	if err != nil {
-		return nil, fmt.Errorf("creating controller-runtime client.Client: %w", err)
-	}
-
 	kubeClient, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("creating kubernetes.Clientset: %w", err)
 	}
 
+	table, err := NewTable(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("creating table paneler: %w", err)
+	}
+
+	item, err := NewItem(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("creating item paneler: %w", err)
+	}
+
 	return &paneler{
 		panelerRegistry: map[string]Paneler{
-			types.PanelTypeTable: &Table{Client: crClient},
-			types.PanelTypeItem:  &Item{Client: crClient},
+			types.PanelTypeTable: table,
+			types.PanelTypeItem:  item,
 			types.PanelTypeLogs:  &Log{KubeClient: kubeClient},
 		},
 	}, nil

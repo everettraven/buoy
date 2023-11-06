@@ -9,23 +9,27 @@
             "columns": [
                 {
                     "header": "Namespace",
-                    "path": "metadata.namespace",
-                    "width": 20
+                    "path": "metadata.namespace"
                 },
                 {
                     "header": "Name",
-                    "path": "metadata.name",
-                    "width": 40
+                    "path": "metadata.name"
                 },
                 {
                     "header": "Phase",
-                    "path": "status.phase",
-                    "width": 10
+                    "path": "status.phase"
                 },
                 {
-                    "header": "Labels",
-                    "path": "metadata.labels",
-                    "width": 20
+                    "header": "PodIP",
+                    "path": "status.podIP"
+                },
+                {
+                    "header": "Start Time",
+                    "path": "status.startTime"
+                },
+                {
+                    "header": "UID",
+                    "path": "metadata.uid"
                 }
             ]
         },
@@ -38,18 +42,15 @@
             "columns": [
                 {
                     "header": "Namespace",
-                    "path": "metadata.namespace",
-                    "width": 20
+                    "path": "metadata.namespace"
                 },
                 {
                     "header": "Name",
-                    "path": "metadata.name",
-                    "width": 40
+                    "path": "metadata.name"
                 },
                 {
                     "header": "Replicas",
-                    "path": "status.replicas",
-                    "width": 10
+                    "path": "status.replicas"
                 }
             ]
         },
@@ -66,17 +67,6 @@
         },
         {
             "name": "Kube API Server Logs",
-            "group": "",
-            "version": "v1",
-            "kind": "Pod",
-            "type": "logs",
-            "key": {
-                "namespace": "kube-system",
-                "name": "kube-apiserver-kind-control-plane"
-            } 
-        },
-        {
-            "name": "Kube API Server Logs Dupe",
             "group": "",
             "version": "v1",
             "kind": "Pod",

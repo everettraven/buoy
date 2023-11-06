@@ -1,47 +1,68 @@
 package paneler
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	tbl "github.com/calyptia/go-bubble-table"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/everettraven/buoy/pkg/charm/models"
-	"github.com/everettraven/buoy/pkg/charm/styles"
-	"github.com/everettraven/buoy/pkg/types"
+	"github.com/everettraven/buoy/pkg/charm/models/panels"
+	buoytypes "github.com/everettraven/buoy/pkg/types"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/dynamic/dynamicinformer"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/restmapper"
+	"k8s.io/client-go/tools/cache"
 )
 
 var _ Paneler = &Table{}
 
 type Table struct {
-	Client client.Client
+	dynamicClient   dynamic.Interface
+	discoveryClient *discovery.DiscoveryClient
+	restMapper      meta.RESTMapper
 }
 
-func (t *Table) Model(panel types.Panel) (tea.Model, error) {
-	tab := types.Table{}
+func NewTable(cfg *rest.Config) (*Table, error) {
+	client, err := dynamic.NewForConfig(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("error creating dynamic client: %w", err)
+	}
+
+	di, err := discovery.NewDiscoveryClientForConfig(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("error creating discovery client: %w", err)
+	}
+
+	gr, err := restmapper.GetAPIGroupResources(di)
+	if err != nil {
+		return nil, fmt.Errorf("error getting API group resources: %w", err)
+	}
+
+	rm := restmapper.NewDiscoveryRESTMapper(gr)
+	return &Table{
+		dynamicClient:   client,
+		discoveryClient: di,
+		restMapper:      rm,
+	}, nil
+}
+
+func (t *Table) Model(panel buoytypes.Panel) (tea.Model, error) {
+	tab := buoytypes.Table{}
 	err := json.Unmarshal(panel.Blob, &tab)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshalling panel to table type: %s", err)
 	}
-	return modelWrapperForTablePanel(t.Client, tab)
+	tw := t.modelWrapperForTablePanel(tab)
+	return tw, t.runInformerForTable(tab, tw)
 }
 
-func modelWrapperForTablePanel(cli client.Client, tablePanel types.Table) (*models.Panel, error) {
-	panelItems := &unstructured.UnstructuredList{}
-	panelItems.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   tablePanel.Group,
-		Version: tablePanel.Version,
-		Kind:    tablePanel.Kind,
-	})
-	err := cli.List(context.Background(), panelItems)
-	if err != nil {
-		return nil, fmt.Errorf("fetching items for panel %q: %s", tablePanel.Name, err)
-	}
-
+func (t *Table) modelWrapperForTablePanel(tablePanel buoytypes.Table) *panels.Table {
 	columns := []string{}
 	width := 0
 	for _, column := range tablePanel.Columns {
@@ -49,44 +70,84 @@ func modelWrapperForTablePanel(cli client.Client, tablePanel types.Table) (*mode
 		width += column.Width
 	}
 
-	rows := []tbl.Row{}
-	for _, item := range panelItems.Items {
-		row := tbl.SimpleRow{}
-		for _, column := range tablePanel.Columns {
-			val, err := getDotNotationValue(item.Object, column.Path)
-			if err != nil {
-				return nil, err
-			}
-			switch val := val.(type) {
-			case string:
-				row = append(row, val)
-			case map[string]interface{}:
-				data, err := json.Marshal(val)
+	tab := tbl.New(columns, 100, 10)
+
+	return panels.NewTable(tablePanel.Name, tab, tablePanel.Columns)
+}
+
+func (t *Table) runInformerForTable(tablePanel buoytypes.Table, tw *panels.Table) error {
+	// create informer and event handler
+	infFact := dynamicinformer.NewDynamicSharedInformerFactory(t.dynamicClient, 1*time.Minute)
+	gvk := schema.GroupVersionKind{
+		Group:   tablePanel.Group,
+		Version: tablePanel.Version,
+		Kind:    tablePanel.Kind,
+	}
+	mapping, err := t.restMapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	if err != nil {
+		return fmt.Errorf("error creating resource mapping: %w", err)
+	}
+
+	inf := infFact.ForResource(mapping.Resource)
+	inf.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			u := obj.(*unstructured.Unstructured)
+			row := tbl.SimpleRow{}
+			for _, column := range tw.Columns() {
+				val, err := getDotNotationValue(u.Object, column.Path)
 				if err != nil {
-					return nil, fmt.Errorf("marshalling object data to string: %w", err)
+					//TODO: Log some kind of info here
+					continue
 				}
-				row = append(row, string(data))
-			default:
-				row = append(row, fmt.Sprint(val))
+				switch val := val.(type) {
+				case string:
+					row = append(row, val)
+				case map[string]interface{}:
+					data, err := json.Marshal(val)
+					if err != nil {
+						//TODO: log some kind of info here
+						continue
+					}
+					row = append(row, string(data))
+				default:
+					row = append(row, fmt.Sprint(val))
+				}
 			}
-		}
-		rows = append(rows, row)
-	}
 
-	height := 6
+			tw.AddOrUpdateRow(u.GetUID(), row)
+		},
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			u := newObj.(*unstructured.Unstructured)
+			row := tbl.SimpleRow{}
+			for _, column := range tw.Columns() {
+				val, err := getDotNotationValue(u.Object, column.Path)
+				if err != nil {
+					//TODO: Log some kind of info here
+					continue
+				}
+				switch val := val.(type) {
+				case string:
+					row = append(row, val)
+				case map[string]interface{}:
+					data, err := json.Marshal(val)
+					if err != nil {
+						//TODO: log some kind of info here
+						continue
+					}
+					row = append(row, string(data))
+				default:
+					row = append(row, fmt.Sprint(val))
+				}
+			}
 
-	if len(rows) < height {
-		height = len(rows) + 1
-	}
+			tw.AddOrUpdateRow(u.GetUID(), row)
+		},
+		DeleteFunc: func(obj interface{}) {
+			u := obj.(*unstructured.Unstructured)
+			tw.DeleteRow(u.GetUID())
+		},
+	})
 
-	t := tbl.New(columns, 100, height)
-	t.SetRows(rows)
-
-	tw := &models.Panel{
-		Model:   t,
-		UpdateF: models.TableUpdateFunc,
-		Name:    tablePanel.Name,
-	}
-	tw.SetStyle(styles.ModelStyle)
-	return tw, nil
+	go inf.Informer().Run(make(<-chan struct{}))
+	return nil
 }
