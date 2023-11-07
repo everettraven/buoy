@@ -5,8 +5,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/everettraven/buoy/pkg/charm/styles"
 )
 
 // Item is a tea.Model implementation
@@ -14,7 +12,6 @@ import (
 type Item struct {
 	viewport viewport.Model
 	name     string
-	style    lipgloss.Style
 	mutex    *sync.Mutex
 }
 
@@ -22,7 +19,6 @@ func NewItem(name string, viewport viewport.Model) *Item {
 	return &Item{
 		viewport: viewport,
 		name:     name,
-		style:    styles.ModelStyle,
 		mutex:    &sync.Mutex{},
 	}
 }
@@ -41,11 +37,7 @@ func (m *Item) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Item) View() string {
-	return m.style.Render(m.viewport.View())
-}
-
-func (m *Item) SetStyle(style lipgloss.Style) {
-	m.style = style
+	return m.viewport.View()
 }
 
 func (m *Item) SetContent(content string) {

@@ -6,8 +6,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/everettraven/buoy/pkg/charm/styles"
 )
 
 // Logs is a tea.Model implementation
@@ -15,7 +13,6 @@ import (
 type Logs struct {
 	viewport viewport.Model
 	name     string
-	style    lipgloss.Style
 	mutex    *sync.Mutex
 	content  string
 }
@@ -24,7 +21,6 @@ func NewLogs(name string, viewport viewport.Model) *Logs {
 	return &Logs{
 		viewport: viewport,
 		name:     name,
-		style:    styles.ModelStyle,
 		mutex:    &sync.Mutex{},
 		content:  "",
 	}
@@ -44,11 +40,7 @@ func (m *Logs) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Logs) View() string {
-	return m.style.Render(m.viewport.View())
-}
-
-func (m *Logs) SetStyle(style lipgloss.Style) {
-	m.style = style
+	return m.viewport.View()
 }
 
 func (m *Logs) AddContent(content string) {

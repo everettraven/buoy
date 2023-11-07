@@ -50,7 +50,7 @@ func run(file string) error {
 		panelModels = append(panelModels, mod)
 	}
 
-	m := &models.Dashboard{Panels: panelModels}
+	m := models.NewDashboard(models.DefaultDashboardKeys, panelModels...)
 	if _, err := tea.NewProgram(m, tea.WithAltScreen()).Run(); err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)
