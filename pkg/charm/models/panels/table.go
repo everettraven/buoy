@@ -5,8 +5,6 @@ import (
 
 	tbl "github.com/calyptia/go-bubble-table"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/everettraven/buoy/pkg/charm/styles"
 	buoytypes "github.com/everettraven/buoy/pkg/types"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -16,7 +14,6 @@ import (
 type Table struct {
 	table   tbl.Model
 	name    string
-	style   lipgloss.Style
 	mutex   *sync.Mutex
 	rows    map[types.UID]tbl.Row
 	columns []buoytypes.Column
@@ -26,7 +23,6 @@ func NewTable(name string, table tbl.Model, columns []buoytypes.Column) *Table {
 	return &Table{
 		table:   table,
 		name:    name,
-		style:   styles.ModelStyle,
 		mutex:   &sync.Mutex{},
 		rows:    map[types.UID]tbl.Row{},
 		columns: columns,
@@ -46,11 +42,7 @@ func (m *Table) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Table) View() string {
-	return m.style.Render(m.table.View())
-}
-
-func (m *Table) SetStyle(style lipgloss.Style) {
-	m.style = style
+	return m.table.View()
 }
 
 func (m *Table) AddOrUpdateRow(uid types.UID, row tbl.Row) {

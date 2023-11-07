@@ -1,6 +1,6 @@
 module github.com/everettraven/buoy
 
-go 1.19
+go 1.21
 
 require (
 	github.com/calyptia/go-bubble-table v0.2.1
@@ -15,7 +15,10 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
+require github.com/dlclark/regexp2 v1.4.0 // indirect
+
 require (
+	github.com/alecthomas/chroma v0.10.0
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

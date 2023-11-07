@@ -75,6 +75,40 @@
                 "namespace": "kube-system",
                 "name": "kube-apiserver-kind-control-plane"
             } 
+        },
+        {
+            "name": "Namespaces",
+            "group": "",
+            "version": "v1",
+            "kind": "Namespace",
+            "type": "table",
+            "columns": [
+                {
+                    "header": "Name",
+                    "path": "metadata.name"
+                }
+            ]
+        },
+        {
+            "name": "Services",
+            "group": "",
+            "version": "v1",
+            "kind": "Service",
+            "type": "table",
+            "columns": [
+                {
+                    "header": "Namespace",
+                    "path": "metadata.namespace"
+                },
+                {
+                    "header": "Name",
+                    "path": "metadata.name"
+                },
+                {
+                    "header": "Type",
+                    "path": "spec.type"
+                }
+            ]
         }
     ]
 }

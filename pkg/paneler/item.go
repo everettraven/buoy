@@ -1,12 +1,16 @@
 package paneler
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"time"
 
+	"github.com/alecthomas/chroma/quick"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/everettraven/buoy/pkg/charm/models/panels"
 	"github.com/everettraven/buoy/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -70,6 +74,10 @@ func (t *Item) modelWrapperForItemPanel(itemPanel types.Item) *panels.Item {
 }
 
 func (t *Item) runInformerForItem(item types.Item, panel *panels.Item) error {
+	theme := "nord"
+	if !lipgloss.HasDarkBackground() {
+		theme = "monokailight"
+	}
 	// create informer and event handler
 	infFact := dynamicinformer.NewFilteredDynamicSharedInformerFactory(t.dynamicClient, 1*time.Minute, item.Key.Namespace, func(lo *v1.ListOptions) {
 		lo.FieldSelector = fmt.Sprintf("metadata.name=%s", item.Key.Name)
@@ -99,7 +107,18 @@ func (t *Item) runInformerForItem(item types.Item, panel *panels.Item) error {
 				panel.SetContent(fmt.Sprintf("converting JSON to YAML for item %q", item.Key.String()))
 				return
 			}
-			panel.SetContent(string(itemYAML))
+			rw := &bytes.Buffer{}
+			err = quick.Highlight(rw, string(itemYAML), "yaml", "terminal16m", theme)
+			if err != nil {
+				panel.SetContent(fmt.Sprintf("highlighting YAML for item %q", item.Key.String()))
+				return
+			}
+			highlighted, err := io.ReadAll(rw)
+			if err != nil {
+				panel.SetContent(fmt.Sprintf("reading highlighted YAML for item %q", item.Key.String()))
+				return
+			}
+			panel.SetContent(string(highlighted))
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			u := newObj.(*unstructured.Unstructured)
@@ -114,7 +133,18 @@ func (t *Item) runInformerForItem(item types.Item, panel *panels.Item) error {
 				panel.SetContent(fmt.Sprintf("converting JSON to YAML for item %q", item.Key.String()))
 				return
 			}
-			panel.SetContent(string(itemYAML))
+			rw := &bytes.Buffer{}
+			err = quick.Highlight(rw, string(itemYAML), "yaml", "terminal16m", theme)
+			if err != nil {
+				panel.SetContent(fmt.Sprintf("highlighting YAML for item %q", item.Key.String()))
+				return
+			}
+			highlighted, err := io.ReadAll(rw)
+			if err != nil {
+				panel.SetContent(fmt.Sprintf("reading highlighted YAML for item %q", item.Key.String()))
+				return
+			}
+			panel.SetContent(string(highlighted))
 		},
 		DeleteFunc: func(obj interface{}) {
 			panel.SetContent("")

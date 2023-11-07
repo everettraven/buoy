@@ -5,7 +5,7 @@
 > [!NOTE]
 > This project is in the extremely early stages of development and is a hobby project. Use at your own risk.
 
-[![asciicast](https://asciinema.org/a/PC5szfOY4kYEm3YvIKTixO3lg.svg)](https://asciinema.org/a/PC5szfOY4kYEm3YvIKTixO3lg)
+[![asciicast](https://asciinema.org/a/Y1t0Pvff6ur8EVsgiF8koIleh.svg)](https://asciinema.org/a/Y1t0Pvff6ur8EVsgiF8koIleh)
 
 ## Quickstart
 
@@ -43,9 +43,12 @@ kind create cluster
 The `test.json` file contains samples for each of the different panel types that `buoy` currently supports. As this is a hobby project very early in the development cycle there are some limitations and things are bound to not work as expected.
 
 ## Controls
-- `ctrl+c`, `q` will quit the program and exit the tui
-- `tab` will switch the active panel
-- up and down arrow keys and mouse scroll will move up and down in the active panel
+- `ctrl+c`, `q`, `esc` will quit the program and exit the tui
+- `tab` will switch the active tab to the one to the right of the currently active tab
+- `shift+tab` will switch the active tab to the one to the left of the currently active tab
+- up and down arrow keys and mouse scroll will move up and down in the active tab
+- For tables you can use the left and right arrows to scroll horizontally
+
 
 ## Contributing
 

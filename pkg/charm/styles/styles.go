@@ -2,14 +2,32 @@ package styles
 
 import "github.com/charmbracelet/lipgloss"
 
-// TODO: better styling
+var adaptColor = lipgloss.AdaptiveColor{Light: "63", Dark: "117"}
 
-var SelectedTitleStyle = lipgloss.NewStyle().
-	Bold(true).Align(lipgloss.Left).Border(lipgloss.RoundedBorder(), true, true, false, true)
+func SelectedTabStyle() lipgloss.Style {
+	border := lipgloss.RoundedBorder()
+	border.BottomLeft = "┘"
+	border.Bottom = " "
+	border.BottomRight = "└"
+	return lipgloss.NewStyle().Bold(true).Align(lipgloss.Center).Border(border).BorderForeground(adaptColor).Padding(0, 1)
+}
 
-var TitleStyle = lipgloss.NewStyle().
-	Bold(true).Align(lipgloss.Left).Border(lipgloss.RoundedBorder())
+func TabStyle() lipgloss.Style {
+	border := lipgloss.RoundedBorder()
+	border.BottomLeft = "┴"
+	border.BottomRight = "┴"
+	return lipgloss.NewStyle().Bold(true).Align(lipgloss.Center).Border(border).BorderForeground(adaptColor).Padding(0, 1)
+}
 
-var ModelStyle = lipgloss.NewStyle().
-	Align(lipgloss.Center, lipgloss.Center).
-	BorderStyle(lipgloss.HiddenBorder())
+func TabGap() lipgloss.Style {
+	border := lipgloss.RoundedBorder()
+	return lipgloss.NewStyle().Bold(true).Align(lipgloss.Center).Border(border, false, false, true, false).BorderForeground(adaptColor).Padding(0, 1)
+}
+
+func ContentStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Align(lipgloss.Center, lipgloss.Center)
+}
+
+func TableSelectedRowStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(adaptColor)
+}

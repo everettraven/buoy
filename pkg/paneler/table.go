@@ -8,6 +8,7 @@ import (
 	tbl "github.com/calyptia/go-bubble-table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/everettraven/buoy/pkg/charm/models/panels"
+	"github.com/everettraven/buoy/pkg/charm/styles"
 	buoytypes "github.com/everettraven/buoy/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -71,7 +72,7 @@ func (t *Table) modelWrapperForTablePanel(tablePanel buoytypes.Table) *panels.Ta
 	}
 
 	tab := tbl.New(columns, 100, 10)
-
+	tab.Styles.SelectedRow = styles.TableSelectedRowStyle()
 	return panels.NewTable(tablePanel.Name, tab, tablePanel.Columns)
 }
 
