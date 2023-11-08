@@ -2,6 +2,7 @@ package models
 
 import (
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -76,6 +77,12 @@ func NewDashboard(keys DashboardKeyMap, panels ...tea.Model) *Dashboard {
 
 func (d *Dashboard) Init() tea.Cmd { return nil }
 
+func (d *Dashboard) tick() tea.Cmd {
+	return tea.Tick(time.Millisecond, func(t time.Time) tea.Msg {
+		return t
+	})
+}
+
 func (d *Dashboard) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
@@ -101,7 +108,7 @@ func (d *Dashboard) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	d.Panels[d.state], cmd = d.Panels[d.state].Update(msg)
-	return d, cmd
+	return d, tea.Batch(d.tick(), cmd)
 }
 
 func (d *Dashboard) View() string {
