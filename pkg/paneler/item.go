@@ -93,7 +93,7 @@ func (t *Item) runInformerForItem(item types.Item, panel *panels.Item) error {
 	}
 
 	inf := infFact.ForResource(mapping.Resource)
-	inf.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err = inf.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			u := obj.(*unstructured.Unstructured)
 			itemJSON, err := u.MarshalJSON()
@@ -150,6 +150,10 @@ func (t *Item) runInformerForItem(item types.Item, panel *panels.Item) error {
 			panel.SetContent("")
 		},
 	})
+
+	if err != nil {
+		return fmt.Errorf("adding event handler to informer: %w", err)
+	}
 
 	go inf.Informer().Run(make(<-chan struct{}))
 	return nil

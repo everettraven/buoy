@@ -90,7 +90,7 @@ func (t *Table) runInformerForTable(tablePanel buoytypes.Table, tw *panels.Table
 	}
 
 	inf := infFact.ForResource(mapping.Resource)
-	inf.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err = inf.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			u := obj.(*unstructured.Unstructured)
 			row := tbl.SimpleRow{}
@@ -148,6 +148,9 @@ func (t *Table) runInformerForTable(tablePanel buoytypes.Table, tw *panels.Table
 			tw.DeleteRow(u.GetUID())
 		},
 	})
+	if err != nil {
+		return fmt.Errorf("adding event handler to informer: %w", err)
+	}
 
 	go inf.Informer().Run(make(<-chan struct{}))
 	return nil
