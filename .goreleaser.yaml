@@ -1,0 +1,25 @@
+before:
+  hooks:
+    - go mod tidy
+    - go mod download
+builds:
+  - id: buoy
+    main: main.go
+    binary: buoy
+    asmflags: "{{ .Env.GO_BUILD_ASMFLAGS }}"
+    gcflags: "{{ .Env.GO_BUILD_GCFLAGS }}"
+    ldflags: "{{ .Env.GO_BUILD_LDFLAGS }}"
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    goos:
+    - linux
+    - darwin
+    goarch:
+    - amd64
+    - arm64
+    - ppc64le
+    - s390x
+release:
+  disable: '{{ ne .Env.ENABLE_RELEASE_PIPELINE "true" }}'
+changelog:
+  use: github-native
+  skip: '{{ ne .Env.ENABLE_RELEASE_PIPELINE "true" }}'
