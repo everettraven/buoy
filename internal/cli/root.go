@@ -23,6 +23,10 @@ var rootCommand = &cobra.Command{
 	},
 }
 
+func init() {
+	rootCommand.AddCommand(versionCommand)
+}
+
 func run(file string) error {
 	rawJson, err := os.ReadFile(file)
 	if err != nil {

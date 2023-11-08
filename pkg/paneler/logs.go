@@ -29,7 +29,7 @@ func (t *Log) Model(panel types.Panel) (tea.Model, error) {
 		return nil, fmt.Errorf("unmarshalling panel to table type: %s", err)
 	}
 	logItem := modelWrapperForLogPanel(t.KubeClient, log)
-	go streamLogs(t.KubeClient, log, logItem)
+	go streamLogs(t.KubeClient, log, logItem) //nolint: errcheck
 	return logItem, nil
 }
 
