@@ -15,11 +15,7 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
-require (
-	github.com/atotto/clipboard v0.1.4 // indirect
-	github.com/dlclark/regexp2 v1.4.0 // indirect
-	github.com/sahilm/fuzzy v0.1.0 // indirect
-)
+require github.com/dlclark/regexp2 v1.4.0 // indirect
 
 require (
 	github.com/alecthomas/chroma v0.10.0
