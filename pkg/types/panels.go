@@ -37,7 +37,9 @@ func (p *Panel) UnmarshalJSON(data []byte) error {
 
 type Table struct {
 	PanelBase
-	Columns []Column `json:"columns"`
+	Columns       []Column          `json:"columns"`
+	Namespace     string            `json:"namespace"`
+	LabelSelector map[string]string `json:"labelSelector"`
 }
 
 type Column struct {

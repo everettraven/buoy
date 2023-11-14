@@ -1,7 +1,7 @@
 {
     "panels": [
         {
-            "name": "Pods",
+            "name": "All Pods",
             "group": "",
             "version": "v1",
             "kind": "Pod",
@@ -30,6 +30,91 @@
                 {
                     "header": "UID",
                     "path": "metadata.uid"
+                }
+            ]
+        },
+        {
+            "name": "Kube-System Pods",
+            "group": "",
+            "version": "v1",
+            "kind": "Pod",
+            "type": "table",
+            "namespace": "kube-system",
+            "columns": [
+                {
+                    "header": "Namespace",
+                    "path": "metadata.namespace"
+                },
+                {
+                    "header": "Name",
+                    "path": "metadata.name"
+                },
+                {
+                    "header": "Phase",
+                    "path": "status.phase"
+                },
+                {
+                    "header": "PodIP",
+                    "path": "status.podIP"
+                },
+                {
+                    "header": "Start Time",
+                    "path": "status.startTime"
+                },
+                {
+                    "header": "UID",
+                    "path": "metadata.uid"
+                }
+            ]
+        },
+        {
+            "name": "Kube-System Pods with label tier=control-plane",
+            "group": "",
+            "version": "v1",
+            "kind": "Pod",
+            "type": "table",
+            "namespace": "kube-system",
+            "labelSelector": {
+                "tier": "control-plane"
+            },
+            "columns": [
+                {
+                    "header": "Namespace",
+                    "path": "metadata.namespace"
+                },
+                {
+                    "header": "Name",
+                    "path": "metadata.name"
+                },
+                {
+                    "header": "Phase",
+                    "path": "status.phase"
+                },
+                {
+                    "header": "PodIP",
+                    "path": "status.podIP"
+                },
+                {
+                    "header": "Start Time",
+                    "path": "status.startTime"
+                },
+                {
+                    "header": "UID",
+                    "path": "metadata.uid"
+                }
+            ]
+        },
+        {
+            "name": "ClusterRoles",
+            "group": "rbac.authorization.k8s.io",
+            "version": "v1",
+            "kind": "ClusterRole",
+            "type": "table",
+            "namespace": "kube-system",
+            "columns": [
+                {
+                    "header": "Name",
+                    "path": "metadata.name"
                 }
             ]
         },
