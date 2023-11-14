@@ -11,7 +11,9 @@ import (
 	"github.com/everettraven/buoy/pkg/charm/styles"
 	buoytypes "github.com/everettraven/buoy/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
@@ -78,7 +80,6 @@ func (t *Table) modelWrapperForTablePanel(tablePanel buoytypes.Table) *panels.Ta
 
 func (t *Table) runInformerForTable(tablePanel buoytypes.Table, tw *panels.Table) error {
 	// create informer and event handler
-	infFact := dynamicinformer.NewDynamicSharedInformerFactory(t.dynamicClient, 1*time.Minute)
 	gvk := schema.GroupVersionKind{
 		Group:   tablePanel.Group,
 		Version: tablePanel.Version,
@@ -88,6 +89,19 @@ func (t *Table) runInformerForTable(tablePanel buoytypes.Table, tw *panels.Table
 	if err != nil {
 		return fmt.Errorf("error creating resource mapping: %w", err)
 	}
+	ns := tablePanel.Namespace
+	if mapping.Scope.Name() == meta.RESTScopeNameRoot {
+		ns = ""
+	}
+	infFact := dynamicinformer.NewFilteredDynamicSharedInformerFactory(
+		t.dynamicClient,
+		1*time.Minute,
+		ns,
+		dynamicinformer.TweakListOptionsFunc(func(options *v1.ListOptions) {
+			ls := labels.SelectorFromSet(tablePanel.LabelSelector)
+			options.LabelSelector = ls.String()
+		}),
+	)
 
 	inf := infFact.ForResource(mapping.Resource)
 	_, err = inf.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
