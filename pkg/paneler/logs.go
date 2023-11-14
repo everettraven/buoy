@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -39,7 +38,7 @@ func modelWrapperForLogPanel(kc *kubernetes.Clientset, logsPanel types.Logs) *pa
 	return vpw
 }
 
-func streamLogs(kc *kubernetes.Clientset, logsPanel types.Logs, logItem *panels.Logs) error {
+func streamLogs(kc *kubernetes.Clientset, logsPanel types.Logs, logItem *panels.Logs) {
 	//TODO: expand this beyond just a pod
 	req := kc.CoreV1().Pods(logsPanel.Key.Namespace).GetLogs(logsPanel.Key.Name, &v1.PodLogOptions{
 		Container: logsPanel.Container,
@@ -48,24 +47,16 @@ func streamLogs(kc *kubernetes.Clientset, logsPanel types.Logs, logItem *panels.
 
 	rc, err := req.Stream(context.Background())
 	if err != nil {
-		return fmt.Errorf("fetching logs for %s/%s: %w", logsPanel.Key.Namespace, logsPanel.Key.Name, err)
+		logItem.AddContent(fmt.Errorf("fetching logs for %s/%s: %w", logsPanel.Key.Namespace, logsPanel.Key.Name, err).Error())
+		return
 	}
 	defer rc.Close()
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-
-	go func() {
-		defer wg.Done()
-		scanner := bufio.NewScanner(rc)
-		for scanner.Scan() {
-			logs := wrapLogs(scanner.Bytes())
-			logItem.AddContent(logs)
-		}
-	}()
-
-	wg.Wait()
-	return nil
+	scanner := bufio.NewScanner(rc)
+	for scanner.Scan() {
+		logs := wrapLogs(scanner.Bytes())
+		logItem.AddContent(logs)
+	}
 }
 
 func wrapLogs(logs []byte) string {

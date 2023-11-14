@@ -97,8 +97,8 @@ func (t *Table) runInformerForTable(tablePanel buoytypes.Table, tw *panels.Table
 			for _, column := range tw.Columns() {
 				val, err := getDotNotationValue(u.Object, column.Path)
 				if err != nil {
-					//TODO: Log some kind of info here
-					continue
+					tw.SetError(err)
+					break
 				}
 				switch val := val.(type) {
 				case string:
@@ -106,8 +106,8 @@ func (t *Table) runInformerForTable(tablePanel buoytypes.Table, tw *panels.Table
 				case map[string]interface{}:
 					data, err := json.Marshal(val)
 					if err != nil {
-						//TODO: log some kind of info here
-						continue
+						tw.SetError(err)
+						break
 					}
 					row = append(row, string(data))
 				default:
@@ -123,8 +123,8 @@ func (t *Table) runInformerForTable(tablePanel buoytypes.Table, tw *panels.Table
 			for _, column := range tw.Columns() {
 				val, err := getDotNotationValue(u.Object, column.Path)
 				if err != nil {
-					//TODO: Log some kind of info here
-					continue
+					tw.SetError(err)
+					break
 				}
 				switch val := val.(type) {
 				case string:
@@ -132,8 +132,8 @@ func (t *Table) runInformerForTable(tablePanel buoytypes.Table, tw *panels.Table
 				case map[string]interface{}:
 					data, err := json.Marshal(val)
 					if err != nil {
-						//TODO: log some kind of info here
-						continue
+						tw.SetError(err)
+						break
 					}
 					row = append(row, string(data))
 				default:

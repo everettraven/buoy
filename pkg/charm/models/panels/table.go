@@ -17,6 +17,7 @@ type Table struct {
 	mutex   *sync.Mutex
 	rows    map[types.UID]tbl.Row
 	columns []buoytypes.Column
+	err     error
 }
 
 func NewTable(name string, table tbl.Model, columns []buoytypes.Column) *Table {
@@ -42,6 +43,9 @@ func (m *Table) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Table) View() string {
+	if m.err != nil {
+		return m.err.Error()
+	}
 	return m.table.View()
 }
 
@@ -73,4 +77,8 @@ func (m *Table) Columns() []buoytypes.Column {
 
 func (m *Table) Name() string {
 	return m.name
+}
+
+func (m *Table) SetError(err error) {
+	m.err = err
 }
