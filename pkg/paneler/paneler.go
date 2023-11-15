@@ -5,8 +5,11 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/everettraven/buoy/pkg/types"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/restmapper"
 )
 
 type Paneler interface {
@@ -25,26 +28,32 @@ func (p *paneler) Model(panel types.Panel) (tea.Model, error) {
 }
 
 func NewDefaultPaneler(cfg *rest.Config) (Paneler, error) {
+	dClient, err := dynamic.NewForConfig(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("error creating dynamic client: %w", err)
+	}
+
 	kubeClient, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("creating kubernetes.Clientset: %w", err)
 	}
 
-	table, err := NewTable(cfg)
+	di, err := discovery.NewDiscoveryClientForConfig(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("creating table paneler: %w", err)
+		return nil, fmt.Errorf("error creating discovery client: %w", err)
 	}
 
-	item, err := NewItem(cfg)
+	gr, err := restmapper.GetAPIGroupResources(di)
 	if err != nil {
-		return nil, fmt.Errorf("creating item paneler: %w", err)
+		return nil, fmt.Errorf("error getting API group resources: %w", err)
 	}
+	rm := restmapper.NewDiscoveryRESTMapper(gr)
 
 	return &paneler{
 		panelerRegistry: map[string]Paneler{
-			types.PanelTypeTable: table,
-			types.PanelTypeItem:  item,
-			types.PanelTypeLogs:  &Log{KubeClient: kubeClient},
+			types.PanelTypeTable: NewTable(dClient, di, rm),
+			types.PanelTypeItem:  NewItem(dClient, di, rm),
+			types.PanelTypeLogs:  NewLog(kubeClient, dClient, di, rm),
 		},
 	}, nil
 }

@@ -20,8 +20,6 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/yaml"
 )
@@ -34,28 +32,12 @@ type Item struct {
 	restMapper      meta.RESTMapper
 }
 
-func NewItem(cfg *rest.Config) (*Item, error) {
-	client, err := dynamic.NewForConfig(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("error creating dynamic client: %w", err)
-	}
-
-	di, err := discovery.NewDiscoveryClientForConfig(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("error creating discovery client: %w", err)
-	}
-
-	gr, err := restmapper.GetAPIGroupResources(di)
-	if err != nil {
-		return nil, fmt.Errorf("error getting API group resources: %w", err)
-	}
-
-	rm := restmapper.NewDiscoveryRESTMapper(gr)
+func NewItem(dynamicClient dynamic.Interface, discoveryClient *discovery.DiscoveryClient, restMapper meta.RESTMapper) *Item {
 	return &Item{
-		dynamicClient:   client,
-		discoveryClient: di,
-		restMapper:      rm,
-	}, nil
+		dynamicClient:   dynamicClient,
+		discoveryClient: discoveryClient,
+		restMapper:      restMapper,
+	}
 }
 
 func (t *Item) Model(panel types.Panel) (tea.Model, error) {
