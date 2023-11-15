@@ -96,19 +96,8 @@ func (t *Table) runInformerForTable(tablePanel buoytypes.Table, tw *panels.Table
 					tw.SetError(err)
 					break
 				}
-				switch val := val.(type) {
-				case string:
-					row = append(row, val)
-				case map[string]interface{}:
-					data, err := json.Marshal(val)
-					if err != nil {
-						tw.SetError(err)
-						break
-					}
-					row = append(row, string(data))
-				default:
-					row = append(row, fmt.Sprint(val))
-				}
+
+				row = append(row, fmt.Sprint(val))
 			}
 
 			tw.AddOrUpdateRow(u.GetUID(), row)
@@ -122,19 +111,7 @@ func (t *Table) runInformerForTable(tablePanel buoytypes.Table, tw *panels.Table
 					tw.SetError(err)
 					break
 				}
-				switch val := val.(type) {
-				case string:
-					row = append(row, val)
-				case map[string]interface{}:
-					data, err := json.Marshal(val)
-					if err != nil {
-						tw.SetError(err)
-						break
-					}
-					row = append(row, string(data))
-				default:
-					row = append(row, fmt.Sprint(val))
-				}
+				row = append(row, fmt.Sprint(val))
 			}
 
 			tw.AddOrUpdateRow(u.GetUID(), row)

@@ -8,6 +8,7 @@ require (
 	github.com/charmbracelet/bubbletea v0.24.2
 	github.com/charmbracelet/lipgloss v0.7.1
 	github.com/spf13/cobra v1.7.0
+	github.com/tidwall/gjson v1.17.0
 	k8s.io/api v0.28.1
 	k8s.io/apimachinery v0.28.1
 	k8s.io/client-go v0.28.1
@@ -15,7 +16,11 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
-require github.com/dlclark/regexp2 v1.4.0 // indirect
+require (
+	github.com/dlclark/regexp2 v1.4.0 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.0 // indirect
+)
 
 require (
 	github.com/alecthomas/chroma v0.10.0
