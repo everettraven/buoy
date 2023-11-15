@@ -3,7 +3,10 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -17,7 +20,7 @@ import (
 )
 
 var rootCommand = &cobra.Command{
-	Use:   "buoy [file.json]",
+	Use:   "buoy [config]",
 	Short: "declarative kubernetes dashboard in the terminal",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -29,14 +32,29 @@ func init() {
 	rootCommand.AddCommand(versionCommand)
 }
 
-func run(file string) error {
-	ext := filepath.Ext(file)
-	raw, err := os.ReadFile(file)
+func run(path string) error {
+	var raw []byte
+	var ext string
+	u, err := url.ParseRequestURI(path)
 	if err != nil {
-		log.Fatalf("reading file: %s", err)
+		ext = filepath.Ext(path)
+		raw, err = os.ReadFile(path)
+		if err != nil {
+			log.Fatalf("reading local config: %s", err)
+		}
+	} else {
+		ext = filepath.Ext(u.Path)
+		resp, err := http.Get(u.String())
+		if err != nil {
+			log.Fatalf("fetching remote config: %s", err)
+		}
+		defer resp.Body.Close()
+		raw, err = io.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatalf("reading remote config: %s", err)
+		}
 	}
 
-	fmt.Println(ext)
 	dash := &types.Dashboard{}
 	if ext == ".yaml" {
 		err = yaml.Unmarshal(raw, dash)
