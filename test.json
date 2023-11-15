@@ -34,40 +34,6 @@
             ]
         },
         {
-            "name": "Kube-System Pods",
-            "group": "",
-            "version": "v1",
-            "kind": "Pod",
-            "type": "table",
-            "namespace": "kube-system",
-            "columns": [
-                {
-                    "header": "Namespace",
-                    "path": "metadata.namespace"
-                },
-                {
-                    "header": "Name",
-                    "path": "metadata.name"
-                },
-                {
-                    "header": "Phase",
-                    "path": "status.phase"
-                },
-                {
-                    "header": "PodIP",
-                    "path": "status.podIP"
-                },
-                {
-                    "header": "Start Time",
-                    "path": "status.startTime"
-                },
-                {
-                    "header": "UID",
-                    "path": "metadata.uid"
-                }
-            ]
-        },
-        {
             "name": "Kube-System Pods with label tier=control-plane",
             "group": "",
             "version": "v1",
@@ -101,20 +67,6 @@
                 {
                     "header": "UID",
                     "path": "metadata.uid"
-                }
-            ]
-        },
-        {
-            "name": "ClusterRoles",
-            "group": "rbac.authorization.k8s.io",
-            "version": "v1",
-            "kind": "ClusterRole",
-            "type": "table",
-            "namespace": "kube-system",
-            "columns": [
-                {
-                    "header": "Name",
-                    "path": "metadata.name"
                 }
             ]
         },
@@ -175,25 +127,15 @@
             ]
         },
         {
-            "name": "Services",
-            "group": "",
+            "name": "CoreDNS Deployment Logs",
+            "group": "apps",
             "version": "v1",
-            "kind": "Service",
-            "type": "table",
-            "columns": [
-                {
-                    "header": "Namespace",
-                    "path": "metadata.namespace"
-                },
-                {
-                    "header": "Name",
-                    "path": "metadata.name"
-                },
-                {
-                    "header": "Type",
-                    "path": "spec.type"
-                }
-            ]
+            "kind": "Deployment",
+            "type": "logs",
+            "key": {
+                "namespace": "kube-system",
+                "name": "coredns"
+            } 
         }
     ]
 }

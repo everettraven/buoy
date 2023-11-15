@@ -47,9 +47,30 @@ func (m *Logs) AddContent(content string) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	m.content = strings.Join([]string{m.content, content}, "\n")
-	m.viewport.SetContent(m.content)
+	m.viewport.SetContent(wrapLogs(m.content, m.viewport.Width))
 }
 
 func (m *Logs) Name() string {
 	return m.name
+}
+
+func wrapLogs(logs string, maxWidth int) string {
+	splitLogs := strings.Split(logs, "\n")
+	var logsBuilder strings.Builder
+	for _, log := range splitLogs {
+		if len(log) > maxWidth {
+			segs := (len(log) / maxWidth)
+			for seg := 0; seg < segs; seg++ {
+				logsBuilder.WriteString(log[:maxWidth])
+				logsBuilder.WriteString("\n")
+				log = log[maxWidth:]
+			}
+			//write any leftovers
+			logsBuilder.WriteString(log)
+		} else {
+			logsBuilder.WriteString(log)
+		}
+		logsBuilder.WriteString("\n")
+	}
+	return logsBuilder.String()
 }

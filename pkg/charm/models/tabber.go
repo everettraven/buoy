@@ -130,11 +130,12 @@ func (p *pager) setPages(tabs []Tab, selected int, width int) {
 			renderedTab = styles.SelectedTabStyle().Render(tab.Name)
 		}
 		tempTab = lipgloss.JoinHorizontal(lipgloss.Top, tempTab, renderedTab)
-		if lipgloss.Width(lipgloss.JoinHorizontal(lipgloss.Top, p.tabLeftArrow, tempTab, p.tabRightArrow)) > width-2 {
+		joined := lipgloss.JoinHorizontal(lipgloss.Bottom, p.tabLeftArrow, tempTab, p.tabRightArrow)
+		if lipgloss.Width(joined) > width-5 {
 			tempPage.end = i
 			tabPages = append(tabPages, tempPage)
 			tempPage = page{start: i, tabs: []string{}}
-			tempTab = ""
+			tempTab = lipgloss.JoinHorizontal(lipgloss.Top, "", renderedTab)
 		}
 
 		tempPage.tabs = append(tempPage.tabs, renderedTab)
