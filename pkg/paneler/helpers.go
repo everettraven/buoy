@@ -1,20 +1,20 @@
 package paneler
 
 import (
+	"encoding/json"
 	"fmt"
-	"strings"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"github.com/tidwall/gjson"
 )
 
 func getDotNotationValue(item map[string]interface{}, dotPath string) (interface{}, error) {
-	keys := strings.Split(dotPath, ".")
-	val, exist, err := unstructured.NestedFieldNoCopy(item, keys...)
+	jsonBytes, err := json.Marshal(item)
 	if err != nil {
-		return nil, fmt.Errorf("error fetching nested field %q: %w", dotPath, err)
+		return nil, fmt.Errorf("error marshalling item to json: %w", err)
 	}
-	if !exist {
+	res := gjson.Get(string(jsonBytes), dotPath)
+	if !res.Exists() {
 		return nil, fmt.Errorf("nested field %q not found", dotPath)
 	}
-	return val, nil
+	return res.Value(), nil
 }

@@ -16,20 +16,20 @@
                     "path": "metadata.name"
                 },
                 {
+                    "header": "Labels",
+                    "path": "metadata.labels"
+                },
+                {
+                    "header": "Ready Condition",
+                    "path": "status.conditions.#(type==Ready)"
+                },
+                {
                     "header": "Phase",
                     "path": "status.phase"
                 },
                 {
-                    "header": "PodIP",
-                    "path": "status.podIP"
-                },
-                {
-                    "header": "Start Time",
-                    "path": "status.startTime"
-                },
-                {
-                    "header": "UID",
-                    "path": "metadata.uid"
+                    "header": "Containers",
+                    "path": "spec.containers.#.name"
                 }
             ]
         },
