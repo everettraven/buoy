@@ -12,12 +12,13 @@ import (
 // Table is a tea.Model implementation
 // that represents a table panel
 type Table struct {
-	table   tbl.Model
-	name    string
-	mutex   *sync.Mutex
-	rows    map[types.UID]tbl.Row
-	columns []buoytypes.Column
-	err     error
+	table    tbl.Model
+	name     string
+	mutex    *sync.Mutex
+	rows     map[types.UID]tbl.Row
+	columns  []buoytypes.Column
+	err      error
+	tempRows []tbl.Row
 }
 
 func NewTable(name string, table tbl.Model, columns []buoytypes.Column) *Table {
@@ -38,6 +39,12 @@ func (m *Table) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.table.SetSize(msg.Width, msg.Height/2)
 	}
+
+	if len(m.tempRows) > 0 {
+		m.table.SetRows(m.tempRows)
+		m.tempRows = []tbl.Row{}
+	}
+
 	m.table, cmd = m.table.Update(msg)
 	return m, cmd
 }
@@ -68,7 +75,7 @@ func (m *Table) updateRows() {
 	for _, row := range m.rows {
 		rows = append(rows, row)
 	}
-	m.table.SetRows(rows)
+	m.tempRows = rows
 }
 
 func (m *Table) Columns() []buoytypes.Column {
