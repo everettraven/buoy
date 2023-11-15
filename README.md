@@ -46,6 +46,8 @@ The `test.json` file contains samples for each of the different panel types that
 
 `buoy` uses https://github.com/tidwall/gjson for the path evaluation and extracting of values from resources. Please consult their documentation for valid path syntax.
 
+You can also specify a remote reference to a dashboard configuration file. It must be a valid URL and the response must be the raw YAML or JSON contents of the file.
+
 ## Controls
 - `ctrl+c`, `q`, `esc` will quit the program and exit the tui
 - `tab` will switch the active tab to the one to the right of the currently active tab
