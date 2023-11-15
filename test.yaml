@@ -1,0 +1,84 @@
+panels:
+  - name: All Pods
+    group: ""
+    version: v1
+    kind: Pod
+    type: table
+    columns:
+      - header: Namespace
+        path: metadata.namespace
+      - header: Name
+        path: metadata.name
+      - header: Labels
+        path: metadata.labels
+      - header: Ready Condition
+        path: status.conditions.#(type==Ready)
+      - header: Phase
+        path: status.phase
+      - header: Containers
+        path: spec.containers.#.name
+  - name: Kube-System Pods with label tier=control-plane
+    group: ""
+    version: v1
+    kind: Pod
+    type: table
+    namespace: kube-system
+    labelSelector:
+      tier: control-plane
+    columns:
+      - header: Namespace
+        path: metadata.namespace
+      - header: Name
+        path: metadata.name
+      - header: Phase
+        path: status.phase
+      - header: PodIP
+        path: status.podIP
+      - header: Start Time
+        path: status.startTime
+      - header: UID
+        path: metadata.uid
+  - name: Deployments
+    group: apps
+    version: v1
+    kind: Deployment
+    type: table
+    columns:
+      - header: Namespace
+        path: metadata.namespace
+      - header: Name
+        path: metadata.name
+      - header: Replicas
+        path: status.replicas
+  - name: Kube API Server
+    group: ""
+    version: v1
+    kind: Pod
+    type: item
+    key:
+      namespace: kube-system
+      name: kube-apiserver-kind-control-plane
+  - name: Kube API Server Logs
+    group: ""
+    version: v1
+    kind: Pod
+    type: logs
+    key:
+      namespace: kube-system
+      name: kube-apiserver-kind-control-plane
+  - name: Namespaces
+    group: ""
+    version: v1
+    kind: Namespace
+    type: table
+    columns:
+      - header: Name
+        path: metadata.name
+  - name: CoreDNS Deployment Logs
+    group: apps
+    version: v1
+    kind: Deployment
+    type: logs
+    key:
+      namespace: kube-system
+      name: coredns

@@ -1,5 +1,5 @@
 package types
 
 type Dashboard struct {
-	Panels []Panel `json:"panels"`
+	Panels []Panel `json:"panels" yaml:"panels"`
 }
