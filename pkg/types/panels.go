@@ -13,16 +13,16 @@ const (
 )
 
 type PanelBase struct {
-	Name    string `json:"name"`
-	Group   string `json:"group"`
-	Version string `json:"version"`
-	Kind    string `json:"kind"`
-	Type    string `json:"type"`
+	Name    string `json:"name" yaml:"name"`
+	Group   string `json:"group" yaml:"group"`
+	Version string `json:"version" yaml:"version"`
+	Kind    string `json:"kind" yaml:"kind"`
+	Type    string `json:"type" yaml:"type"`
 }
 
 type Panel struct {
 	PanelBase
-	Blob json.RawMessage `json:"blob"`
+	Blob json.RawMessage `json:"blob" yaml:"blob"`
 }
 
 func (p *Panel) UnmarshalJSON(data []byte) error {
@@ -37,24 +37,24 @@ func (p *Panel) UnmarshalJSON(data []byte) error {
 
 type Table struct {
 	PanelBase
-	Columns       []Column          `json:"columns"`
-	Namespace     string            `json:"namespace"`
-	LabelSelector map[string]string `json:"labelSelector"`
+	Columns       []Column          `json:"columns" yaml:"columns"`
+	Namespace     string            `json:"namespace" yaml:"namespace"`
+	LabelSelector map[string]string `json:"labelSelector" yaml:"labelSelector"`
 }
 
 type Column struct {
-	Header string `json:"header"`
-	Width  int    `json:"width"`
-	Path   string `json:"path"`
+	Header string `json:"header" yaml:"header"`
+	Width  int    `json:"width" yaml:"width"`
+	Path   string `json:"path" yaml:"path"`
 }
 
 type Item struct {
 	PanelBase
-	Key types.NamespacedName
+	Key types.NamespacedName `json:"key" yaml:"key"`
 }
 
 type Logs struct {
 	PanelBase
-	Key       types.NamespacedName
-	Container string `json:"container"`
+	Key       types.NamespacedName `json:"key" yaml:"key"`
+	Container string               `json:"container" yaml:"container"`
 }

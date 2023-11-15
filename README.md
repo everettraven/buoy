@@ -42,7 +42,9 @@ kind create cluster
 
 The `test.json` file contains samples for each of the different panel types that `buoy` currently supports. As this is a hobby project very early in the development cycle there are some limitations and things are bound to not work as expected.
 
-`buoy` uses https://github.com/tidwall/gjson for the path evaluation and extracting of values from resources. Please consult their documentation for valid path syntax
+`test.yaml` results in the exact same dashboard as `test.json` and exists to show YAML support.
+
+`buoy` uses https://github.com/tidwall/gjson for the path evaluation and extracting of values from resources. Please consult their documentation for valid path syntax.
 
 ## Controls
 - `ctrl+c`, `q`, `esc` will quit the program and exit the tui

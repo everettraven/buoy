@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/everettraven/buoy/pkg/charm/models"
@@ -12,6 +13,7 @@ import (
 	"github.com/everettraven/buoy/pkg/types"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"sigs.k8s.io/yaml"
 )
 
 var rootCommand = &cobra.Command{
@@ -28,13 +30,19 @@ func init() {
 }
 
 func run(file string) error {
-	rawJson, err := os.ReadFile(file)
+	ext := filepath.Ext(file)
+	raw, err := os.ReadFile(file)
 	if err != nil {
 		log.Fatalf("reading file: %s", err)
 	}
 
+	fmt.Println(ext)
 	dash := &types.Dashboard{}
-	err = json.Unmarshal(rawJson, dash)
+	if ext == ".yaml" {
+		err = yaml.Unmarshal(raw, dash)
+	} else {
+		err = json.Unmarshal(raw, dash)
+	}
 	if err != nil {
 		log.Fatalf("unmarshalling dashboard: %s", err)
 	}
