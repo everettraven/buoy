@@ -12,9 +12,8 @@ import (
 )
 
 type DashboardKeyMap struct {
-	Help       key.Binding
-	Quit       key.Binding
-	TabberKeys TabberKeyMap
+	Help key.Binding
+	Quit key.Binding
 }
 
 // ShortHelp returns keybindings to be shown in the mini help view. It's part
@@ -27,8 +26,7 @@ func (k DashboardKeyMap) ShortHelp() []key.Binding {
 // key.Map interface.
 func (k DashboardKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.TabberKeys.TabLeft, k.TabberKeys.TabRight}, // first column
-		{k.Help, k.Quit}, // second column
+		{k.Help, k.Quit},
 	}
 }
 
@@ -41,7 +39,6 @@ var DefaultDashboardKeys = DashboardKeyMap{
 		key.WithKeys("q", "esc", "ctrl+c"),
 		key.WithHelp("q, esc, ctrl+c", "quit"),
 	),
-	TabberKeys: DefaultTabberKeys,
 }
 
 type Namer interface {
@@ -100,5 +97,14 @@ func (d *Dashboard) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (d *Dashboard) View() string {
 	div := styles.TabGap().Render(strings.Repeat(" ", max(0, d.width-2)))
-	return lipgloss.JoinVertical(0, d.tabber.View(), div, d.help.View(d.keys))
+	return lipgloss.JoinVertical(0, d.tabber.View(), div, d.help.View(d.Help()))
+}
+
+func (d *Dashboard) Help() help.KeyMap {
+	return CompositeHelpKeyMap{
+		helps: []help.KeyMap{
+			d.tabber.Help(),
+			d.keys,
+		},
+	}
 }
