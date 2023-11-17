@@ -36,8 +36,8 @@ var DefaultDashboardKeys = DashboardKeyMap{
 		key.WithHelp("?", "toggle help"),
 	),
 	Quit: key.NewBinding(
-		key.WithKeys("q", "esc", "ctrl+c"),
-		key.WithHelp("q, esc, ctrl+c", "quit"),
+		key.WithKeys("q", "ctrl+c"),
+		key.WithHelp("q, ctrl+c", "quit"),
 	),
 }
 

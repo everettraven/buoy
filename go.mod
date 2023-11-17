@@ -7,6 +7,7 @@ require (
 	github.com/charmbracelet/bubbles v0.16.1
 	github.com/charmbracelet/bubbletea v0.24.2
 	github.com/charmbracelet/lipgloss v0.7.1
+	github.com/sahilm/fuzzy v0.1.0
 	github.com/spf13/cobra v1.7.0
 	github.com/tidwall/gjson v1.17.0
 	k8s.io/api v0.28.1
@@ -17,6 +18,7 @@ require (
 )
 
 require (
+	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
