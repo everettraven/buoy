@@ -3,11 +3,16 @@ package models
 import (
 	"strings"
 
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/everettraven/buoy/pkg/charm/styles"
 )
+
+type Helper interface {
+	Help() help.KeyMap
+}
 
 type Tab struct {
 	Name  string
@@ -50,6 +55,12 @@ func (t *Tabber) Update(msg tea.Msg) (*Tabber, tea.Cmd) {
 		}
 	case tea.WindowSizeMsg:
 		t.width = msg.Width
+		for i := range t.tabs {
+			var tempCmd tea.Cmd
+			t.tabs[i].Model, tempCmd = t.tabs[i].Model.Update(msg)
+			cmd = tea.Batch(cmd, tempCmd)
+		}
+		return t, cmd
 	}
 
 	t.tabs[t.selected].Model, cmd = t.tabs[t.selected].Model.Update(msg)
@@ -76,9 +87,34 @@ func (t *Tabber) View() string {
 	return lipgloss.JoinVertical(0, tabsWithBorder, content)
 }
 
+func (t *Tabber) Help() help.KeyMap {
+	helps := []help.KeyMap{}
+	if helper, ok := t.tabs[t.selected].Model.(Helper); ok {
+		helps = append(helps, helper.Help())
+	}
+
+	return CompositeHelpKeyMap{
+		helps: append(helps, t.keyMap),
+	}
+}
+
 type TabberKeyMap struct {
 	TabRight key.Binding
 	TabLeft  key.Binding
+}
+
+// ShortHelp returns keybindings to be shown in the mini help view. It's part
+// of the key.Map interface.
+func (k TabberKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{}
+}
+
+// FullHelp returns keybindings for the expanded help view. It's part of the
+// key.Map interface.
+func (k TabberKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.TabLeft, k.TabRight},
+	}
 }
 
 var DefaultTabberKeys = TabberKeyMap{
