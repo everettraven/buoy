@@ -31,3 +31,11 @@ func ContentStyle() lipgloss.Style {
 func TableSelectedRowStyle() lipgloss.Style {
 	return lipgloss.NewStyle().Foreground(adaptColor)
 }
+
+func LogSearchHighlightStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(adaptColor)
+}
+
+func LogSearchModeStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Italic(true).Faint(true)
+}
