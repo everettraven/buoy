@@ -32,8 +32,8 @@ func (k DashboardKeyMap) FullHelp() [][]key.Binding {
 
 var DefaultDashboardKeys = DashboardKeyMap{
 	Help: key.NewBinding(
-		key.WithKeys("?"),
-		key.WithHelp("?", "toggle help"),
+		key.WithKeys("ctrl+h"),
+		key.WithHelp("ctrl+h", "toggle help"),
 	),
 	Quit: key.NewBinding(
 		key.WithKeys("q", "ctrl+c"),

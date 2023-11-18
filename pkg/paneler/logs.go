@@ -5,8 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/everettraven/buoy/pkg/charm/models/panels"
 	"github.com/everettraven/buoy/pkg/types"
@@ -40,27 +40,25 @@ func NewLog(typedClient *kubernetes.Clientset, dynamicClient dynamic.Interface, 
 }
 
 func (t *Log) Model(panel types.Panel) (tea.Model, error) {
-	log := types.Logs{}
-	err := json.Unmarshal(panel.Blob, &log)
+	log := &types.Logs{}
+	err := json.Unmarshal(panel.Blob, log)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshalling panel to table type: %s", err)
 	}
-	logItem := modelWrapperForLogPanel(log)
+	logPanel := panels.NewLogs(panels.DefaultLogsKeys, log.Name)
 	pod, err := t.getPodForObject(log)
 	if err != nil {
 		return nil, fmt.Errorf("error getting pod for object: %w", err)
 	}
-	go streamLogs(t.typedClient, pod, logItem, log.Container) //nolint: errcheck
-	return logItem, nil
+	rc, err := logsForPod(t.typedClient, pod, log.Container)
+	if err != nil {
+		return nil, fmt.Errorf("error getting logs for pod: %w", err)
+	}
+	go streamLogs(rc, logPanel)
+	return logPanel, nil
 }
 
-func modelWrapperForLogPanel(logsPanel types.Logs) *panels.Logs {
-	vp := viewport.New(100, 20)
-	vpw := panels.NewLogs(logsPanel.Name, vp)
-	return vpw
-}
-
-func (t *Log) getPodForObject(logsPanel types.Logs) (*v1.Pod, error) {
+func (t *Log) getPodForObject(logsPanel *types.Logs) (*v1.Pod, error) {
 	gvk := schema.GroupVersionKind{
 		Group:   logsPanel.Group,
 		Version: logsPanel.Version,
@@ -114,7 +112,14 @@ func getPodSelectorForUnstructured(u *unstructured.Unstructured) (labels.Selecto
 	return metav1.LabelSelectorAsSelector(sel)
 }
 
-func streamLogs(kc *kubernetes.Clientset, pod *v1.Pod, logItem *panels.Logs, container string) {
+func streamLogs(rc io.ReadCloser, logPanel *panels.Logs) {
+	scanner := bufio.NewScanner(rc)
+	for scanner.Scan() {
+		logPanel.AddContent(scanner.Text())
+	}
+}
+
+func logsForPod(kc *kubernetes.Clientset, pod *v1.Pod, container string) (io.ReadCloser, error) {
 	req := kc.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &v1.PodLogOptions{
 		Container: container,
 		Follow:    true,
@@ -122,13 +127,7 @@ func streamLogs(kc *kubernetes.Clientset, pod *v1.Pod, logItem *panels.Logs, con
 
 	rc, err := req.Stream(context.Background())
 	if err != nil {
-		logItem.AddContent(fmt.Errorf("fetching logs for %s/%s: %w", pod.Namespace, pod.Name, err).Error())
-		return
+		return nil, fmt.Errorf("fetching logs for %s/%s: %w", pod.Namespace, pod.Name, err)
 	}
-	defer rc.Close()
-
-	scanner := bufio.NewScanner(rc)
-	for scanner.Scan() {
-		logItem.AddContent(scanner.Text())
-	}
+	return rc, nil
 }
