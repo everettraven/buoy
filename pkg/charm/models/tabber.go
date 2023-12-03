@@ -38,7 +38,6 @@ func (t *Tabber) Init() tea.Cmd {
 }
 
 func (t *Tabber) Update(msg tea.Msg) (*Tabber, tea.Cmd) {
-	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
@@ -47,14 +46,17 @@ func (t *Tabber) Update(msg tea.Msg) (*Tabber, tea.Cmd) {
 			if t.selected > len(t.tabs)-1 {
 				t.selected = 0
 			}
+			return t, tea.ClearScreen
 		case key.Matches(msg, t.keyMap.TabLeft):
 			t.selected--
 			if t.selected < 0 {
 				t.selected = len(t.tabs) - 1
 			}
+			return t, tea.ClearScreen
 		}
 	case tea.WindowSizeMsg:
 		t.width = msg.Width
+		var cmd tea.Cmd
 		for i := range t.tabs {
 			var tempCmd tea.Cmd
 			t.tabs[i].Model, tempCmd = t.tabs[i].Model.Update(msg)
@@ -63,6 +65,7 @@ func (t *Tabber) Update(msg tea.Msg) (*Tabber, tea.Cmd) {
 		return t, cmd
 	}
 
+	var cmd tea.Cmd
 	t.tabs[t.selected].Model, cmd = t.tabs[t.selected].Model.Update(msg)
 	return t, cmd
 }

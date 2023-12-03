@@ -12,6 +12,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/everettraven/buoy/pkg/charm/styles"
+	"github.com/muesli/reflow/wrap"
 	"github.com/sahilm/fuzzy"
 )
 
@@ -77,8 +78,9 @@ func NewLogs(keys LogsKeyMap, name string) *Logs {
 	searchbar := textinput.New()
 	searchbar.Prompt = "> "
 	searchbar.Placeholder = "search term"
+	vp := viewport.New(10, 10)
 	return &Logs{
-		viewport:  viewport.New(10, 10),
+		viewport:  vp,
 		searchbar: searchbar,
 		name:      name,
 		mutex:     &sync.Mutex{},
@@ -250,22 +252,5 @@ func matched(index int, matches []int) bool {
 }
 
 func wrapLogs(logs string, maxWidth int) string {
-	splitLogs := strings.Split(logs, "\n")
-	var logsBuilder strings.Builder
-	for _, log := range splitLogs {
-		if len(log) > maxWidth {
-			segs := (len(log) / maxWidth)
-			for seg := 0; seg < segs; seg++ {
-				logsBuilder.WriteString(log[:maxWidth])
-				logsBuilder.WriteString("\n")
-				log = log[maxWidth:]
-			}
-			//write any leftovers
-			logsBuilder.WriteString(log)
-		} else {
-			logsBuilder.WriteString(log)
-		}
-		logsBuilder.WriteString("\n")
-	}
-	return logsBuilder.String()
+	return wrap.String(logs, maxWidth)
 }
