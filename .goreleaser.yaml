@@ -8,7 +8,6 @@ builds:
     binary: buoy
     asmflags: "{{ .Env.GO_BUILD_ASMFLAGS }}"
     gcflags: "{{ .Env.GO_BUILD_GCFLAGS }}"
-    ldflags: "{{ .Env.GO_BUILD_LDFLAGS }}"
     mod_timestamp: "{{ .CommitTimestamp }}"
     goos:
     - linux
