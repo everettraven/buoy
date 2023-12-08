@@ -25,6 +25,7 @@ var versionCommand = &cobra.Command{
 		out.WriteString(header + "\n\n")
 		settingNameStyle := lipgloss.NewStyle().Bold(true)
 		if bi, ok := debug.ReadBuildInfo(); ok {
+			out.WriteString(fmt.Sprintf("%s: %s\n\n", settingNameStyle.Render("version"), bi.Main.Version))
 			for _, setting := range bi.Settings {
 				name := settingNameStyle.Render(setting.Key)
 				out.WriteString(fmt.Sprintf("%s: %s\n", name, setting.Value))
