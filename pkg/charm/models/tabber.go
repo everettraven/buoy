@@ -46,13 +46,13 @@ func (t *Tabber) Update(msg tea.Msg) (*Tabber, tea.Cmd) {
 			if t.selected > len(t.tabs)-1 {
 				t.selected = 0
 			}
-			return t, tea.ClearScreen
+			return t, nil
 		case key.Matches(msg, t.keyMap.TabLeft):
 			t.selected--
 			if t.selected < 0 {
 				t.selected = len(t.tabs) - 1
 			}
-			return t, tea.ClearScreen
+			return t, nil
 		}
 	case tea.WindowSizeMsg:
 		t.width = msg.Width
