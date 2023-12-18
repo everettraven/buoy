@@ -2,8 +2,7 @@
 
 `buoy` is a declarative TUI dashboard for Kubernetes. You define your dashboard in a JSON file and it will fetch the information from your Kubernetes cluster and build a dashboard for viewing the requested content right in your terminal window.
 
-> [!NOTE]
-> This project is in the extremely early stages of development and is a hobby project. Use at your own risk.
+!> This project is in the extremely early stages of development and is a hobby project. Use at your own risk 
 
 [![asciicast](https://asciinema.org/a/625808.svg)](https://asciinema.org/a/625808)
 
