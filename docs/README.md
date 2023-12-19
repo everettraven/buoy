@@ -1,6 +1,6 @@
 # buoy
 
-`buoy` is a declarative TUI dashboard for Kubernetes. You define your dashboard in a JSON file and it will fetch the information from your Kubernetes cluster and build a dashboard for viewing the requested content right in your terminal window.
+`buoy` is a declarative TUI dashboard for Kubernetes. You define your dashboard in a JSON or YAML file and it will fetch the information from your Kubernetes cluster and build a dashboard for viewing the requested content right in your terminal window.
 
 !> This project is in the extremely early stages of development and is a hobby project. Use at your own risk 
 
@@ -54,13 +54,11 @@ The `test.json` file contains samples for each of the different panel types that
 
 You can also specify a remote reference to a dashboard configuration file. It must be a valid URL and the response must be the raw YAML or JSON contents of the file.
 
-## Controls
-- `ctrl+c`, `q`, `esc` will quit the program and exit the tui
+## General Controls
+- `ctrl+c`, `q` will quit the program and exit the tui
 - `tab` will switch the active tab to the one to the right of the currently active tab
 - `shift+tab` will switch the active tab to the one to the left of the currently active tab
-- up and down arrow keys and mouse scroll will move up and down in the active tab
-- For tables you can use the left and right arrows to scroll horizontally
-
+- `ctrl+h` will open a more detailed help menu
 
 ## Contributing
 

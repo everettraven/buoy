@@ -47,4 +47,3 @@ panels:
 
 - Up and down arrow keys for navigating the viewport
 - Page Up and Page Down for jumping up and down in the viewport
-- `v` to toggle viewing the full YAML of the selected resource
