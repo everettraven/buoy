@@ -15,44 +15,15 @@ Since I was running pretty repetitive commands I thought there had to be a bette
 
 ## Quickstart
 
-- Clone the repository:
-```
-git clone https://github.com/everettraven/buoy.git
-```
-
-- `cd` into the cloned repository:
-```
-cd buoy
+Install `buoy` by downloading one of the binaries from the [releases](https://github.com/everettraven/buoy/releases) or by running:
+```sh
+go install github.com/everettraven/buoy@latest
 ```
 
-- Build the `buoy` binary:
+Load a dashboard with:
+```sh
+buoy <dashboard config file path>
 ```
-make build
-```
-
-_OR_
-
-```
-go build -o buoy main.go
-```
-
-- Create a KinD cluster:
-```
-kind create cluster
-```
-
-- Run `buoy` using the `test.json` file:
-```
-./buoy test.json
-```
-
-The `test.json` file contains samples for each of the different panel types that `buoy` currently supports. As this is a hobby project very early in the development cycle there are some limitations and things are bound to not work as expected.
-
-`test.yaml` results in the exact same dashboard as `test.json` and exists to show YAML support.
-
-`buoy` uses https://github.com/tidwall/gjson for the path evaluation and extracting of values from resources. Please consult their documentation for valid path syntax.
-
-You can also specify a remote reference to a dashboard configuration file. It must be a valid URL and the response must be the raw YAML or JSON contents of the file.
 
 ## General Controls
 - `ctrl+c`, `q` will quit the program and exit the tui
