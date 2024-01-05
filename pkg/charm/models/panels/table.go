@@ -155,7 +155,7 @@ func (m *Table) View() string {
 	case modeView:
 		return m.viewport.View()
 	default:
-		return "?"
+		return fmt.Sprintf("unknown table state. table.mode=%q", m.mode)
 	}
 }
 
@@ -232,6 +232,10 @@ func (m *Table) FetchContentForIndex(index int) (string, error) {
 			rowInfo = row
 			break
 		}
+	}
+
+	if rowInfo == nil {
+		return "", fmt.Errorf("no row data found for selected row %d", index)
 	}
 
 	name := rowInfo.Identifier.String()
