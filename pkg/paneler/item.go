@@ -12,6 +12,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/everettraven/buoy/pkg/charm/models/panels"
+	"github.com/everettraven/buoy/pkg/charm/styles"
 	"github.com/everettraven/buoy/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,13 +31,15 @@ type Item struct {
 	dynamicClient   dynamic.Interface
 	discoveryClient *discovery.DiscoveryClient
 	restMapper      meta.RESTMapper
+	theme           *styles.Theme
 }
 
-func NewItem(dynamicClient dynamic.Interface, discoveryClient *discovery.DiscoveryClient, restMapper meta.RESTMapper) *Item {
+func NewItem(dynamicClient dynamic.Interface, discoveryClient *discovery.DiscoveryClient, restMapper meta.RESTMapper, theme *styles.Theme) *Item {
 	return &Item{
 		dynamicClient:   dynamicClient,
 		discoveryClient: discoveryClient,
 		restMapper:      restMapper,
+		theme:           theme,
 	}
 }
 
@@ -56,9 +59,9 @@ func (t *Item) modelWrapperForItemPanel(itemPanel types.Item) *panels.Item {
 }
 
 func (t *Item) runInformerForItem(item types.Item, panel *panels.Item) error {
-	theme := "nord"
+	theme := t.theme.SyntaxHighlightDarkTheme
 	if !lipgloss.HasDarkBackground() {
-		theme = "monokailight"
+		theme = t.theme.SyntaxHighlightLightTheme
 	}
 	// create informer and event handler
 	infFact := dynamicinformer.NewFilteredDynamicSharedInformerFactory(t.dynamicClient, 1*time.Minute, item.Key.Namespace, func(lo *v1.ListOptions) {

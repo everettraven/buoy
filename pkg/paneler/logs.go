@@ -9,6 +9,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/everettraven/buoy/pkg/charm/models/panels"
+	"github.com/everettraven/buoy/pkg/charm/styles"
 	"github.com/everettraven/buoy/pkg/types"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -28,14 +29,16 @@ type Log struct {
 	dynamicClient   dynamic.Interface
 	discoveryClient *discovery.DiscoveryClient
 	restMapper      meta.RESTMapper
+	theme           *styles.Theme
 }
 
-func NewLog(typedClient *kubernetes.Clientset, dynamicClient dynamic.Interface, discoveryClient *discovery.DiscoveryClient, restMapper meta.RESTMapper) *Log {
+func NewLog(typedClient *kubernetes.Clientset, dynamicClient dynamic.Interface, discoveryClient *discovery.DiscoveryClient, restMapper meta.RESTMapper, theme *styles.Theme) *Log {
 	return &Log{
 		typedClient:     typedClient,
 		dynamicClient:   dynamicClient,
 		discoveryClient: discoveryClient,
 		restMapper:      restMapper,
+		theme:           theme,
 	}
 }
 
@@ -45,7 +48,7 @@ func (t *Log) Model(panel types.Panel) (tea.Model, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unmarshalling panel to table type: %s", err)
 	}
-	logPanel := panels.NewLogs(panels.DefaultLogsKeys, log.Name)
+	logPanel := panels.NewLogs(panels.DefaultLogsKeys, log.Name, t.theme)
 	pod, err := t.getPodForObject(log)
 	if err != nil {
 		return nil, fmt.Errorf("error getting pod for object: %w", err)

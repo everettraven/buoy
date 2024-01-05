@@ -7,6 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/everettraven/buoy/pkg/charm/models/panels"
+	"github.com/everettraven/buoy/pkg/charm/styles"
 	buoytypes "github.com/everettraven/buoy/pkg/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,13 +27,15 @@ type Table struct {
 	dynamicClient   dynamic.Interface
 	discoveryClient *discovery.DiscoveryClient
 	restMapper      meta.RESTMapper
+	theme           *styles.Theme
 }
 
-func NewTable(dynamicClient dynamic.Interface, discoveryClient *discovery.DiscoveryClient, restMapper meta.RESTMapper) *Table {
+func NewTable(dynamicClient dynamic.Interface, discoveryClient *discovery.DiscoveryClient, restMapper meta.RESTMapper, theme *styles.Theme) *Table {
 	return &Table{
 		dynamicClient:   dynamicClient,
 		discoveryClient: discoveryClient,
 		restMapper:      restMapper,
+		theme:           theme,
 	}
 }
 
@@ -55,7 +58,7 @@ func (t *Table) modelForTablePanel(tablePanel *buoytypes.Table) (*panels.Table, 
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating informer for table: %w", err)
 	}
-	table := panels.NewTable(panels.DefaultTableKeys, tablePanel, inf.Lister(), scope)
+	table := panels.NewTable(panels.DefaultTableKeys, tablePanel, inf.Lister(), scope, t.theme)
 	_, err = setEventHandlerForTableInformer(inf, table)
 	if err != nil {
 		return nil, nil, fmt.Errorf("setting event handler for table informer: %w", err)

@@ -74,9 +74,10 @@ type Table struct {
 	err      error
 	tempRows []tbl.Row
 	keys     TableKeyMap
+	theme    *styles.Theme
 }
 
-func NewTable(keys TableKeyMap, table *buoytypes.Table, lister cache.GenericLister, scope meta.RESTScopeName) *Table {
+func NewTable(keys TableKeyMap, table *buoytypes.Table, lister cache.GenericLister, scope meta.RESTScopeName, theme *styles.Theme) *Table {
 	tblColumns := []string{}
 	width := 0
 	for _, column := range table.Columns {
@@ -85,7 +86,7 @@ func NewTable(keys TableKeyMap, table *buoytypes.Table, lister cache.GenericList
 	}
 
 	tab := tbl.New(tblColumns, 100, 10)
-	tab.Styles.SelectedRow = styles.TableSelectedRowStyle()
+	tab.Styles.SelectedRow = theme.TableSelectedRowStyle()
 
 	return &Table{
 		table:    tab,
@@ -98,6 +99,7 @@ func NewTable(keys TableKeyMap, table *buoytypes.Table, lister cache.GenericList
 		rows:     map[types.UID]*RowInfo{},
 		columns:  table.Columns,
 		keys:     keys,
+		theme:    theme,
 	}
 }
 
@@ -242,9 +244,9 @@ func (m *Table) FetchContentForIndex(index int) (string, error) {
 		return "", fmt.Errorf("converting JSON to YAML for item %q: %w", name, err)
 	}
 
-	theme := "nord"
+	theme := m.theme.SyntaxHighlightDarkTheme
 	if !lipgloss.HasDarkBackground() {
-		theme = "monokailight"
+		theme = m.theme.SyntaxHighlightLightTheme
 	}
 	rw := &bytes.Buffer{}
 	err = quick.Highlight(rw, string(itemYAML), "yaml", "terminal16m", theme)
