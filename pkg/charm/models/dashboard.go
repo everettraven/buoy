@@ -53,9 +53,10 @@ type Dashboard struct {
 	width  int
 	help   help.Model
 	keys   DashboardKeyMap
+	theme  *styles.Theme
 }
 
-func NewDashboard(keys DashboardKeyMap, panels ...tea.Model) *Dashboard {
+func NewDashboard(keys DashboardKeyMap, theme *styles.Theme, panels ...tea.Model) *Dashboard {
 	tabs := []Tab{}
 	for _, panel := range panels {
 		if namer, ok := panel.(Namer); ok {
@@ -63,9 +64,10 @@ func NewDashboard(keys DashboardKeyMap, panels ...tea.Model) *Dashboard {
 		}
 	}
 	return &Dashboard{
-		tabber: NewTabber(DefaultTabberKeys, tabs...),
+		tabber: NewTabber(DefaultTabberKeys, theme, tabs...),
 		help:   help.New(),
 		keys:   keys,
+		theme:  theme,
 	}
 }
 
@@ -96,7 +98,7 @@ func (d *Dashboard) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (d *Dashboard) View() string {
-	div := styles.TabGap().Render(strings.Repeat(" ", max(0, d.width-2)))
+	div := d.theme.TabGap().Render(strings.Repeat(" ", max(0, d.width-2)))
 	return lipgloss.JoinVertical(0, d.tabber.View(), div, d.help.View(d.Help()))
 }
 

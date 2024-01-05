@@ -8,4 +8,5 @@
 - Features
     - [Dot Notation Field Paths](features/dot-notation-paths.md)
     - [Remote Dashboard Configurations](features/remote-configs.md)
+    - [Theme Customization](features/themes.md)
     

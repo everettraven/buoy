@@ -24,12 +24,14 @@ type Tabber struct {
 	selected int
 	keyMap   TabberKeyMap
 	width    int
+	theme    *styles.Theme
 }
 
-func NewTabber(keyMap TabberKeyMap, tabs ...Tab) *Tabber {
+func NewTabber(keyMap TabberKeyMap, theme *styles.Theme, tabs ...Tab) *Tabber {
 	return &Tabber{
 		tabs:   tabs,
 		keyMap: keyMap,
+		theme:  theme,
 	}
 }
 
@@ -71,22 +73,23 @@ func (t *Tabber) Update(msg tea.Msg) (*Tabber, tea.Cmd) {
 }
 
 func (t *Tabber) View() string {
-	tabRightArrow := styles.TabGap().Render("  ▶  ")
-	tabLeftArrow := styles.TabGap().Render("  ◀  ")
+	tabRightArrow := t.theme.TabGap().Render("  ▶  ")
+	tabLeftArrow := t.theme.TabGap().Render("  ◀  ")
 
 	pager := &pager{
 		tabRightArrow: tabRightArrow,
 		tabLeftArrow:  tabLeftArrow,
 		pages:         []page{},
+		theme:         t.theme,
 	}
 	pager.setPages(t.tabs, t.selected, t.width)
 
 	tabBlock := pager.renderForSelectedTab(t.selected)
 	// gap is a repeating of the spaces so that the bottom border continues the entire width
 	// of the terminal. This allows it to look like a proper set of tabs
-	gap := styles.TabGap().Render(strings.Repeat(" ", max(0, t.width-lipgloss.Width(tabBlock)-2)))
+	gap := t.theme.TabGap().Render(strings.Repeat(" ", max(0, t.width-lipgloss.Width(tabBlock)-2)))
 	tabsWithBorder := lipgloss.JoinHorizontal(lipgloss.Bottom, tabBlock, gap)
-	content := styles.ContentStyle().Render(t.tabs[t.selected].Model.View())
+	content := t.theme.ContentStyle().Render(t.tabs[t.selected].Model.View())
 	return lipgloss.JoinVertical(0, tabsWithBorder, content)
 }
 
@@ -141,6 +144,7 @@ type pager struct {
 	pages         []page
 	tabRightArrow string
 	tabLeftArrow  string
+	theme         *styles.Theme
 }
 
 func (p *pager) renderForSelectedTab(selected int) string {
@@ -164,9 +168,9 @@ func (p *pager) setPages(tabs []Tab, selected int, width int) {
 	tempTab := ""
 	tempPage := page{start: 0, tabs: []string{}}
 	for i, tab := range tabs {
-		renderedTab := styles.TabStyle().Render(tab.Name)
+		renderedTab := p.theme.TabStyle().Render(tab.Name)
 		if i == selected {
-			renderedTab = styles.SelectedTabStyle().Render(tab.Name)
+			renderedTab = p.theme.SelectedTabStyle().Render(tab.Name)
 		}
 		tempTab = lipgloss.JoinHorizontal(lipgloss.Top, tempTab, renderedTab)
 		joined := lipgloss.JoinHorizontal(lipgloss.Bottom, p.tabLeftArrow, tempTab, p.tabRightArrow)

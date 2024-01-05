@@ -1,0 +1,16 @@
+{
+    "tabColor": {
+        "light": "236",
+        "dark": "220"
+    },
+    "selectedRowHighlightColor":  {
+        "light": "236",
+        "dark": "220"
+    },
+    "logSearchHighlightColor":  {
+        "light": "236",
+        "dark": "220"
+    },
+    "syntaxHighlightDarkColor": "monokai",
+    "syntaxHighlightLightColor": "monokailight"
+}

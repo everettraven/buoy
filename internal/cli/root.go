@@ -12,6 +12,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/everettraven/buoy/pkg/charm/models"
+	"github.com/everettraven/buoy/pkg/charm/styles"
 	"github.com/everettraven/buoy/pkg/paneler"
 	"github.com/everettraven/buoy/pkg/types"
 	"github.com/spf13/cobra"
@@ -24,15 +25,20 @@ var rootCommand = &cobra.Command{
 	Short: "declarative kubernetes dashboard in the terminal",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return run(args[0])
+		themePath, err := cmd.Flags().GetString("theme")
+		if err != nil {
+			return fmt.Errorf("getting theme flag: %w", err)
+		}
+		return run(args[0], themePath)
 	},
 }
 
 func init() {
 	rootCommand.AddCommand(versionCommand)
+	rootCommand.Flags().String("theme", styles.DefaultThemePath, "path to theme file")
 }
 
-func run(path string) error {
+func run(path string, themePath string) error {
 	var raw []byte
 	var ext string
 	u, err := url.ParseRequestURI(path)
@@ -65,8 +71,13 @@ func run(path string) error {
 		log.Fatalf("unmarshalling dashboard: %s", err)
 	}
 
+	theme, err := styles.LoadTheme(themePath)
+	if err != nil {
+		log.Fatalf("loading theme: %s", err)
+	}
+
 	cfg := config.GetConfigOrDie()
-	p, err := paneler.NewDefaultPaneler(cfg)
+	p, err := paneler.NewDefaultPaneler(cfg, theme)
 	if err != nil {
 		log.Fatalf("configuring paneler: %s", err)
 	}
@@ -80,7 +91,7 @@ func run(path string) error {
 		panelModels = append(panelModels, mod)
 	}
 
-	m := models.NewDashboard(models.DefaultDashboardKeys, panelModels...)
+	m := models.NewDashboard(models.DefaultDashboardKeys, theme, panelModels...)
 	if _, err := tea.NewProgram(m, tea.WithAltScreen()).Run(); err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)

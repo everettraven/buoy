@@ -72,9 +72,10 @@ type Logs struct {
 	mode           string
 	keys           LogsKeyMap
 	strictSearch   bool
+	theme          *styles.Theme
 }
 
-func NewLogs(keys LogsKeyMap, name string) *Logs {
+func NewLogs(keys LogsKeyMap, name string, theme *styles.Theme) *Logs {
 	searchbar := textinput.New()
 	searchbar.Prompt = "> "
 	searchbar.Placeholder = "search term"
@@ -87,6 +88,7 @@ func NewLogs(keys LogsKeyMap, name string) *Logs {
 		content:   "",
 		mode:      modeLogs,
 		keys:      keys,
+		theme:     theme,
 	}
 }
 
@@ -139,7 +141,7 @@ func (m *Logs) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.mode == modeSearched {
-		m.viewport.SetContent(searchLogs(m.content, m.searchbar.Value(), m.viewport.Width, m.strictSearch))
+		m.viewport.SetContent(m.searchLogs())
 	}
 
 	m.viewport, cmd = m.viewport.Update(msg)
@@ -151,7 +153,7 @@ func (m *Logs) View() string {
 	if m.strictSearch {
 		searchMode = "strict"
 	}
-	searchModeOutput := styles.LogSearchModeStyle().Render(fmt.Sprintf("search mode: %s", searchMode))
+	searchModeOutput := m.theme.LogSearchModeStyle().Render(fmt.Sprintf("search mode: %s", searchMode))
 
 	if m.mode == modeSearching {
 		return lipgloss.JoinVertical(lipgloss.Top,
@@ -185,19 +187,22 @@ func (m *Logs) Name() string {
 	return m.name
 }
 
-// searchLogs searches the logs for the given term
+// searchLogs searches the logs for the term in the searchbar
 // and returns a string with the matching log lines
 // and the matched term highlighted. Uses fuzzy search
-// if strict is false. Wraps logs to the given width if wrap > 0.
-func searchLogs(logs, term string, wrap int, strict bool) string {
-	splitLogs := strings.Split(logs, "\n")
+// if strict search is not enabled. Wraps logs to the width of the viewport.
+func (m *Logs) searchLogs() string {
+	term := m.searchbar.Value()
+	wrap := m.viewport.Width
+	strict := m.strictSearch
+	splitLogs := strings.Split(m.content, "\n")
 	if strict {
-		return strictMatchLogs(term, splitLogs, wrap)
+		return strictMatchLogs(term, splitLogs, m.viewport.Width, m.theme.LogSearchHighlightStyle())
 	}
-	return fuzzyMatchLogs(term, splitLogs, wrap)
+	return fuzzyMatchLogs(term, splitLogs, wrap, m.theme.LogSearchHighlightStyle())
 }
 
-func strictMatchLogs(searchTerm string, logLines []string, wrap int) string {
+func strictMatchLogs(searchTerm string, logLines []string, wrap int, style lipgloss.Style) string {
 	var results strings.Builder
 	for _, log := range logLines {
 		if wrap > 0 {
@@ -207,7 +212,7 @@ func strictMatchLogs(searchTerm string, logLines []string, wrap int) string {
 			highlighted := strings.Replace(
 				log,
 				searchTerm,
-				styles.LogSearchHighlightStyle().Render(searchTerm), -1,
+				style.Render(searchTerm), -1,
 			)
 			results.WriteString(highlighted + "\n")
 		}
@@ -215,7 +220,7 @@ func strictMatchLogs(searchTerm string, logLines []string, wrap int) string {
 	return results.String()
 }
 
-func fuzzyMatchLogs(searchTerm string, logLines []string, wrap int) string {
+func fuzzyMatchLogs(searchTerm string, logLines []string, wrap int, style lipgloss.Style) string {
 	var matches []fuzzy.Match
 	if wrap > 0 {
 		wrappedLogs := []string{}
@@ -231,7 +236,7 @@ func fuzzyMatchLogs(searchTerm string, logLines []string, wrap int) string {
 	for _, match := range matches {
 		for i := 0; i < len(match.Str); i++ {
 			if matched(i, match.MatchedIndexes) {
-				results.WriteString(styles.LogSearchHighlightStyle().Render(string(match.Str[i])))
+				results.WriteString(style.Render(string(match.Str[i])))
 			} else {
 				results.WriteString(string(match.Str[i]))
 			}
