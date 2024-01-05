@@ -62,22 +62,22 @@ type RowInfo struct {
 // Table is a tea.Model implementation
 // that represents a table panel
 type Table struct {
-	table    tbl.Model
-	lister   cache.GenericLister
-	scope    meta.RESTScopeName
-	viewport viewport.Model
-	mode     string
-	name     string
-	mutex    *sync.Mutex
-	rows     map[types.UID]*RowInfo
-	columns  []buoytypes.Column
-	err      error
-	tempRows []tbl.Row
-	keys     TableKeyMap
-	theme    *styles.Theme
+	tableModel tbl.Model
+	lister     cache.GenericLister
+	scope      meta.RESTScopeName
+	viewport   viewport.Model
+	mode       string
+	mutex      *sync.Mutex
+	rows       map[types.UID]*RowInfo
+	columns    []buoytypes.Column
+	err        error
+	tempRows   []tbl.Row
+	keys       TableKeyMap
+	theme      styles.Theme
+	table      *buoytypes.Table
 }
 
-func NewTable(keys TableKeyMap, table *buoytypes.Table, lister cache.GenericLister, scope meta.RESTScopeName, theme *styles.Theme) *Table {
+func NewTable(keys TableKeyMap, table *buoytypes.Table, theme styles.Theme) *Table {
 	tblColumns := []string{}
 	width := 0
 	for _, column := range table.Columns {
@@ -89,17 +89,15 @@ func NewTable(keys TableKeyMap, table *buoytypes.Table, lister cache.GenericList
 	tab.Styles.SelectedRow = theme.TableSelectedRowStyle()
 
 	return &Table{
-		table:    tab,
-		viewport: viewport.New(0, 0),
-		scope:    scope,
-		lister:   lister,
-		mode:     modeTable,
-		name:     table.Name,
-		mutex:    &sync.Mutex{},
-		rows:     map[types.UID]*RowInfo{},
-		columns:  table.Columns,
-		keys:     keys,
-		theme:    theme,
+		tableModel: tab,
+		viewport:   viewport.New(0, 0),
+		mode:       modeTable,
+		mutex:      &sync.Mutex{},
+		rows:       map[types.UID]*RowInfo{},
+		columns:    table.Columns,
+		keys:       keys,
+		theme:      theme,
+		table:      table,
 	}
 }
 
@@ -111,7 +109,7 @@ func (m *Table) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.table.SetSize(msg.Width, msg.Height/2)
+		m.tableModel.SetSize(msg.Width, msg.Height/2)
 		m.viewport.Width = msg.Width
 		m.viewport.Height = msg.Height / 2
 	case tea.KeyMsg:
@@ -120,7 +118,7 @@ func (m *Table) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch m.mode {
 			case modeTable:
 				m.mode = modeView
-				vpContent, err := m.FetchContentForIndex(m.table.Cursor())
+				vpContent, err := m.FetchContentForIndex(m.tableModel.Cursor())
 				if err != nil {
 					m.viewport.SetContent(err.Error())
 				} else {
@@ -134,13 +132,13 @@ func (m *Table) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if len(m.tempRows) > 0 {
-		m.table.SetRows(m.tempRows)
+		m.tableModel.SetRows(m.tempRows)
 		m.tempRows = []tbl.Row{}
 	}
 
 	switch m.mode {
 	case modeTable:
-		m.table, cmd = m.table.Update(msg)
+		m.tableModel, cmd = m.tableModel.Update(msg)
 	case modeView:
 		m.viewport, cmd = m.viewport.Update(msg)
 	}
@@ -153,7 +151,7 @@ func (m *Table) View() string {
 	}
 	switch m.mode {
 	case modeTable:
-		return m.table.View()
+		return m.tableModel.View()
 	case modeView:
 		return m.viewport.View()
 	default:
@@ -206,7 +204,19 @@ func (m *Table) Columns() []buoytypes.Column {
 }
 
 func (m *Table) Name() string {
-	return m.name
+	return m.table.Name
+}
+
+func (m *Table) TableDefinition() *buoytypes.Table {
+	return m.table
+}
+
+func (m *Table) SetLister(lister cache.GenericLister) {
+	m.lister = lister
+}
+
+func (m *Table) SetScope(scope meta.RESTScopeName) {
+	m.scope = scope
 }
 
 func (m *Table) SetError(err error) {

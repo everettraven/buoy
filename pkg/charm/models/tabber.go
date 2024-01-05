@@ -24,10 +24,10 @@ type Tabber struct {
 	selected int
 	keyMap   TabberKeyMap
 	width    int
-	theme    *styles.Theme
+	theme    styles.Theme
 }
 
-func NewTabber(keyMap TabberKeyMap, theme *styles.Theme, tabs ...Tab) *Tabber {
+func NewTabber(keyMap TabberKeyMap, theme styles.Theme, tabs ...Tab) *Tabber {
 	return &Tabber{
 		tabs:   tabs,
 		keyMap: keyMap,
@@ -144,7 +144,7 @@ type pager struct {
 	pages         []page
 	tabRightArrow string
 	tabLeftArrow  string
-	theme         *styles.Theme
+	theme         styles.Theme
 }
 
 func (p *pager) renderForSelectedTab(selected int) string {
