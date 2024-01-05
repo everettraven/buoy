@@ -53,10 +53,10 @@ type Dashboard struct {
 	width  int
 	help   help.Model
 	keys   DashboardKeyMap
-	theme  *styles.Theme
+	theme  styles.Theme
 }
 
-func NewDashboard(keys DashboardKeyMap, theme *styles.Theme, panels ...tea.Model) *Dashboard {
+func NewDashboard(keys DashboardKeyMap, theme styles.Theme, panels ...tea.Model) *Dashboard {
 	tabs := []Tab{}
 	for _, panel := range panels {
 		if namer, ok := panel.(Namer); ok {

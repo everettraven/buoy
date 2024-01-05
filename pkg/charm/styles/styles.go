@@ -31,8 +31,8 @@ const DefaultThemePath = "~/.config/buoy/themes/default.json"
 
 var DefaultColor = lipgloss.AdaptiveColor{Light: "63", Dark: "117"}
 
-func LoadTheme(themePath string) (*Theme, error) {
-	t := &Theme{
+func LoadTheme(themePath string) (Theme, error) {
+	t := Theme{
 		TabColor:                  DefaultColor,
 		SelectedRowHighlightColor: DefaultColor,
 		LogSearchHighlightColor:   DefaultColor,
@@ -49,12 +49,13 @@ func LoadTheme(themePath string) (*Theme, error) {
 		return t, fmt.Errorf("reading theme file: %w", err)
 	}
 
-	err = json.Unmarshal(raw, t)
+	customTheme := &Theme{}
+	err = json.Unmarshal(raw, customTheme)
 	if err != nil {
 		return t, fmt.Errorf("unmarshalling theme: %w", err)
 	}
 
-	return t, nil
+	return *customTheme, nil
 }
 
 func (t *Theme) SelectedTabStyle() lipgloss.Style {

@@ -13,7 +13,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/everettraven/buoy/pkg/charm/models"
 	"github.com/everettraven/buoy/pkg/charm/styles"
-	"github.com/everettraven/buoy/pkg/paneler"
+	"github.com/everettraven/buoy/pkg/factories/datastream"
+	"github.com/everettraven/buoy/pkg/factories/panel"
 	"github.com/everettraven/buoy/pkg/types"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -36,6 +37,10 @@ var rootCommand = &cobra.Command{
 func init() {
 	rootCommand.AddCommand(versionCommand)
 	rootCommand.Flags().String("theme", styles.DefaultThemePath, "path to theme file")
+}
+
+type ErrorSetter interface {
+	SetError(err error)
 }
 
 func run(path string, themePath string) error {
@@ -76,19 +81,33 @@ func run(path string, themePath string) error {
 		log.Fatalf("loading theme: %s", err)
 	}
 
+	p := panel.NewPanelFactory(theme)
+
 	cfg := config.GetConfigOrDie()
-	p, err := paneler.NewDefaultPaneler(cfg, theme)
+	df, err := datastream.NewDatastreamFactory(cfg)
 	if err != nil {
-		log.Fatalf("configuring paneler: %s", err)
+		log.Fatalf("configuring datastream factory: %s", err)
 	}
 
 	panelModels := []tea.Model{}
 	for _, panel := range dash.Panels {
-		mod, err := p.Model(panel)
+		mod, err := p.ModelForPanel(panel)
 		if err != nil {
 			log.Fatalf("getting model for panel %q: %s", panel.Name, err)
 		}
 		panelModels = append(panelModels, mod)
+	}
+
+	for _, panel := range panelModels {
+		dataStream, err := df.DatastreamForModel(panel)
+		if err != nil {
+			if errSetter, ok := panel.(ErrorSetter); ok {
+				errSetter.SetError(err)
+			} else {
+				log.Fatalf("getting datastream for model: %s", err)
+			}
+		}
+		go dataStream.Run(make(<-chan struct{}))
 	}
 
 	m := models.NewDashboard(models.DefaultDashboardKeys, theme, panelModels...)

@@ -23,5 +23,5 @@ GOLANGCI_LINT_ARGS ?=
 lint: $(GOLANGCI_LINT)
 	$(GOLANGCI_LINT) run $(GOLANGCI_LINT_ARGS)
 unit:
-	go test ./...
+	go test ./... -coverprofile=cover.out -covermode=atomic
 
