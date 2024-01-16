@@ -49,7 +49,7 @@ func TableDatastreamFunc(dynamicClient *dynamic.DynamicClient, restMapper meta.R
 		)
 
 		inf := infFact.ForResource(mapping.Resource)
-		inf.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		_, err = inf.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				u := obj.(*unstructured.Unstructured)
 				table.AddOrUpdate(u)
@@ -63,6 +63,10 @@ func TableDatastreamFunc(dynamicClient *dynamic.DynamicClient, restMapper meta.R
 				table.DeleteRow(u.GetUID())
 			},
 		})
+
+		if err != nil {
+			return nil, err
+		}
 
 		table.SetLister(inf.Lister())
 		table.SetScope(mapping.Scope.Name())
