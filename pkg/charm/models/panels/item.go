@@ -5,21 +5,26 @@ import (
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/everettraven/buoy/pkg/charm/styles"
+	"github.com/everettraven/buoy/pkg/types"
 )
 
 // Item is a tea.Model implementation
 // that represents an item panel
 type Item struct {
 	viewport viewport.Model
-	name     string
 	mutex    *sync.Mutex
+	item     types.Item
+	theme    styles.Theme
+	err      error
 }
 
-func NewItem(name string, viewport viewport.Model) *Item {
+func NewItem(item types.Item, viewport viewport.Model, theme styles.Theme) *Item {
 	return &Item{
 		viewport: viewport,
-		name:     name,
 		mutex:    &sync.Mutex{},
+		item:     item,
+		theme:    theme,
 	}
 }
 
@@ -37,6 +42,9 @@ func (m *Item) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Item) View() string {
+	if m.err != nil {
+		return m.err.Error()
+	}
 	return m.viewport.View()
 }
 
@@ -47,5 +55,17 @@ func (m *Item) SetContent(content string) {
 }
 
 func (m *Item) Name() string {
-	return m.name
+	return m.item.Name
+}
+
+func (m *Item) ItemDefinition() types.Item {
+	return m.item
+}
+
+func (m *Item) Theme() styles.Theme {
+	return m.theme
+}
+
+func (m *Item) SetError(err error) {
+	m.err = err
 }

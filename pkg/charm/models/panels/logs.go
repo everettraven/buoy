@@ -12,6 +12,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/everettraven/buoy/pkg/charm/styles"
+	"github.com/everettraven/buoy/pkg/types"
 	"github.com/muesli/reflow/wrap"
 	"github.com/sahilm/fuzzy"
 )
@@ -65,17 +66,18 @@ const modeSearched = "searched"
 type Logs struct {
 	viewport       viewport.Model
 	searchbar      textinput.Model
-	name           string
 	mutex          *sync.Mutex
 	content        string
 	contentUpdated bool
 	mode           string
 	keys           LogsKeyMap
 	strictSearch   bool
-	theme          *styles.Theme
+	theme          styles.Theme
+	log            *types.Logs
+	err            error
 }
 
-func NewLogs(keys LogsKeyMap, name string, theme *styles.Theme) *Logs {
+func NewLogs(keys LogsKeyMap, log *types.Logs, theme styles.Theme) *Logs {
 	searchbar := textinput.New()
 	searchbar.Prompt = "> "
 	searchbar.Placeholder = "search term"
@@ -83,7 +85,7 @@ func NewLogs(keys LogsKeyMap, name string, theme *styles.Theme) *Logs {
 	return &Logs{
 		viewport:  vp,
 		searchbar: searchbar,
-		name:      name,
+		log:       log,
 		mutex:     &sync.Mutex{},
 		content:   "",
 		mode:      modeLogs,
@@ -149,6 +151,10 @@ func (m *Logs) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Logs) View() string {
+	if m.err != nil {
+		return m.err.Error()
+	}
+
 	searchMode := "fuzzy"
 	if m.strictSearch {
 		searchMode = "strict"
@@ -184,7 +190,15 @@ func (m *Logs) AddContent(content string) {
 }
 
 func (m *Logs) Name() string {
-	return m.name
+	return m.log.Name
+}
+
+func (m *Logs) LogDefinition() *types.Logs {
+	return m.log
+}
+
+func (m *Logs) SetError(err error) {
+	m.err = err
 }
 
 // searchLogs searches the logs for the term in the searchbar
