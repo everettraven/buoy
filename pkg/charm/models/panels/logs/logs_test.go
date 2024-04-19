@@ -1,29 +1,28 @@
-package panels
+package logs
 
 import (
 	"errors"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/everettraven/buoy/pkg/charm/styles"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestEnterSearchMode(t *testing.T) {
-	logs := NewLogs(DefaultLogsKeys, nil, styles.Theme{})
+	logs := New(DefaultKeys, nil, Styles{})
 	logs.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("/")})
 	assert.Equal(t, logs.mode, modeSearching)
 }
 
 func TestExecuteSearch(t *testing.T) {
-	logs := NewLogs(DefaultLogsKeys, nil, styles.Theme{})
+	logs := New(DefaultKeys, nil, Styles{})
 	logs.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("/")})
 	logs.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	assert.Equal(t, logs.mode, modeSearched)
 }
 
 func TestExitSearchMode(t *testing.T) {
-	logs := NewLogs(DefaultLogsKeys, nil, styles.Theme{})
+	logs := New(DefaultKeys, nil, Styles{})
 	logs.mode = modeSearching
 	logs.searchbar.Focus()
 	logs.Update(tea.KeyMsg{Type: tea.KeyEsc})
@@ -38,7 +37,7 @@ func TestExitSearchMode(t *testing.T) {
 }
 
 func TestSearchModeToggle(t *testing.T) {
-	logs := NewLogs(DefaultLogsKeys, nil, styles.Theme{})
+	logs := New(DefaultKeys, nil, Styles{})
 	logs.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("/")})
 	logs.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
 	assert.True(t, logs.strictSearch)
@@ -48,7 +47,7 @@ func TestSearchModeToggle(t *testing.T) {
 
 func TestSearchLogs(t *testing.T) {
 	t.Log("strict search")
-	logs := NewLogs(DefaultLogsKeys, nil, styles.Theme{})
+	logs := New(DefaultKeys, nil, Styles{})
 	logs.strictSearch = true
 	logs.content = "some log line\nlog line with a search term\n"
 	logs.viewport.Width = 50
@@ -64,14 +63,14 @@ func TestSearchLogs(t *testing.T) {
 }
 
 func TestLogsWindowSizeUpdate(t *testing.T) {
-	logs := NewLogs(DefaultLogsKeys, nil, styles.Theme{})
+	logs := New(DefaultKeys, nil, Styles{})
 	logs.Update(tea.WindowSizeMsg{Width: 100, Height: 100})
 	assert.Equal(t, logs.viewport.Width, 100)
 	assert.Equal(t, logs.viewport.Height, 50)
 }
 
 func TestLogsAddContent(t *testing.T) {
-	logs := NewLogs(DefaultLogsKeys, nil, styles.Theme{})
+	logs := New(DefaultKeys, nil, Styles{})
 	logs.AddContent("some log line\n")
 	assert.Equal(t, "\nsome log line\n", logs.content)
 	assert.True(t, logs.contentUpdated)
@@ -81,7 +80,7 @@ func TestLogsAddContent(t *testing.T) {
 }
 
 func TestLogsViewWithError(t *testing.T) {
-	logs := NewLogs(DefaultLogsKeys, nil, styles.Theme{})
+	logs := New(DefaultKeys, nil, Styles{})
 	err := errors.New("some error")
 	logs.SetError(err)
 	assert.Equal(t, err, logs.err)

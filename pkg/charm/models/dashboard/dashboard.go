@@ -1,4 +1,4 @@
-package models
+package dashboard
 
 import (
 	"strings"
@@ -8,7 +8,8 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/everettraven/buoy/pkg/charm/styles"
+	"github.com/everettraven/buoy/pkg/charm/models/helper"
+	"github.com/everettraven/buoy/pkg/charm/models/tabs"
 )
 
 type DashboardKeyMap struct {
@@ -45,29 +46,36 @@ type Namer interface {
 	Name() string
 }
 
+// DashboardStyleOptions is the set of style options that can be
+// used to configure the styles used by the Dashboard model
+type DashboardStyleOptions struct {
+	TabModelStyle tabs.TabModelStyleOptions
+	DividerStyle  lipgloss.Style
+}
+
 // Dashboard is a tea.Model implementation
 // for viewing Kubernetes information based
 // on a declarative dashboard description
 type Dashboard struct {
-	tabber *Tabber
-	width  int
-	help   help.Model
-	keys   DashboardKeyMap
-	theme  styles.Theme
+	tabber       *tabs.TabModel
+	width        int
+	help         help.Model
+	keys         DashboardKeyMap
+	dividerStyle lipgloss.Style
 }
 
-func NewDashboard(keys DashboardKeyMap, theme styles.Theme, panels ...tea.Model) *Dashboard {
-	tabs := []Tab{}
+func New(keys DashboardKeyMap, style DashboardStyleOptions, panels ...tea.Model) *Dashboard {
+	tabset := []tabs.Tab{}
 	for _, panel := range panels {
 		if namer, ok := panel.(Namer); ok {
-			tabs = append(tabs, Tab{Name: namer.Name(), Model: panel})
+			tabset = append(tabset, tabs.Tab{Name: namer.Name(), Model: panel})
 		}
 	}
 	return &Dashboard{
-		tabber: NewTabber(DefaultTabberKeys, theme, tabs...),
-		help:   help.New(),
-		keys:   keys,
-		theme:  theme,
+		tabber:       tabs.New(tabs.DefaultTabberKeys, style.TabModelStyle, tabset...),
+		help:         help.New(),
+		keys:         keys,
+		dividerStyle: style.DividerStyle,
 	}
 }
 
@@ -98,15 +106,15 @@ func (d *Dashboard) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (d *Dashboard) View() string {
-	div := d.theme.TabGap().Render(strings.Repeat(" ", max(0, d.width-2)))
-	return lipgloss.JoinVertical(0, d.tabber.View(), div, d.help.View(d.Help()))
+	divider := d.dividerStyle.Render(strings.Repeat(" ", max(0, d.width-2)))
+	return lipgloss.JoinVertical(0, d.tabber.View(), divider, d.help.View(d.Help()))
 }
 
 func (d *Dashboard) Help() help.KeyMap {
-	return CompositeHelpKeyMap{
-		helps: []help.KeyMap{
+	return helper.NewCompositeHelpKeyMap(
+		[]help.KeyMap{
 			d.tabber.Help(),
 			d.keys,
-		},
-	}
+		}...,
+	)
 }

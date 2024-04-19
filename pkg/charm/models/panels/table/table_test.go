@@ -1,11 +1,10 @@
-package panels
+package table
 
 import (
 	"errors"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/everettraven/buoy/pkg/charm/styles"
 	buoytypes "github.com/everettraven/buoy/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -14,7 +13,7 @@ import (
 
 func TestTableUpdate(t *testing.T) {
 	t.Log("WindowSizeUpdate")
-	table := NewTable(DefaultTableKeys, &buoytypes.Table{}, styles.Theme{})
+	table := New(DefaultKeys, &buoytypes.Table{}, Styles{})
 	table.Update(tea.WindowSizeMsg{Width: 50, Height: 50})
 	assert.Equal(t, 50, table.viewport.Width)
 	assert.Equal(t, 25, table.viewport.Height)
@@ -29,11 +28,11 @@ func TestTableUpdate(t *testing.T) {
 }
 
 func TestAddOrUpdate(t *testing.T) {
-	table := NewTable(DefaultTableKeys, &buoytypes.Table{
+	table := New(DefaultKeys, &buoytypes.Table{
 		Columns: []buoytypes.Column{
 			{Header: "Name", Width: 10, Path: "metadata.name"},
 		},
-	}, styles.Theme{})
+	}, Styles{})
 
 	t.Log("add a row")
 	u := &unstructured.Unstructured{}
@@ -54,11 +53,11 @@ func TestAddOrUpdate(t *testing.T) {
 }
 
 func TestDeleteRow(t *testing.T) {
-	table := NewTable(DefaultTableKeys, &buoytypes.Table{
+	table := New(DefaultKeys, &buoytypes.Table{
 		Columns: []buoytypes.Column{
 			{Header: "Name", Width: 10, Path: "metadata.name"},
 		},
-	}, styles.Theme{})
+	}, Styles{})
 
 	t.Log("add a row")
 	u := &unstructured.Unstructured{}
@@ -74,7 +73,7 @@ func TestDeleteRow(t *testing.T) {
 }
 
 func TestTableView(t *testing.T) {
-	table := NewTable(DefaultTableKeys, &buoytypes.Table{}, styles.Theme{})
+	table := New(DefaultKeys, &buoytypes.Table{}, Styles{})
 
 	t.Log("view with error state")
 	err := errors.New("some error")

@@ -11,7 +11,8 @@ import (
 	"path/filepath"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/everettraven/buoy/pkg/charm/models"
+	"github.com/everettraven/buoy/pkg/charm/models/dashboard"
+	"github.com/everettraven/buoy/pkg/charm/models/tabs"
 	"github.com/everettraven/buoy/pkg/charm/styles"
 	"github.com/everettraven/buoy/pkg/factories/datastream"
 	"github.com/everettraven/buoy/pkg/factories/panel"
@@ -103,14 +104,31 @@ func run(path string, themePath string) error {
 		if err != nil {
 			if errSetter, ok := panel.(ErrorSetter); ok {
 				errSetter.SetError(err)
+                continue
 			} else {
 				log.Fatalf("getting datastream for model: %s", err)
 			}
 		}
+        if dataStream == nil {
+            log.Printf("nil datastream returned for panel (%T)", panel)
+            continue
+        }
+
 		go dataStream.Run(make(<-chan struct{}))
 	}
 
-	m := models.NewDashboard(models.DefaultDashboardKeys, theme, panelModels...)
+	dashboardStyles := dashboard.DashboardStyleOptions{
+		TabModelStyle: tabs.TabModelStyleOptions{
+			GapStyle:      theme.TabGap(),
+			ContentStyle:  theme.ContentStyle(),
+			SelectedStyle: theme.SelectedTabStyle(),
+			TabStyle:      theme.TabStyle(),
+			LeftArrow:     theme.TabLeftArrow,
+			RightArrow:    theme.TabRightArrow,
+		},
+		DividerStyle: theme.TabGap(),
+	}
+	m := dashboard.New(dashboard.DefaultDashboardKeys, dashboardStyles, panelModels...)
 	if _, err := tea.NewProgram(m, tea.WithAltScreen()).Run(); err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)
