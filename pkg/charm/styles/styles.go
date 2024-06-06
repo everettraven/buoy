@@ -102,9 +102,9 @@ func (t *Theme) LogSearchModeStyle() lipgloss.Style {
 }
 
 func (t *Theme) TabArrowRight() string {
-	return t.TabArrowRight()
+	return t.TabRightArrow
 }
 
 func (t *Theme) TabArrowLeft() string {
-	return t.TabArrowLeft()
+	return t.TabLeftArrow
 }
