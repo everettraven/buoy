@@ -25,6 +25,11 @@ type Theme struct {
 	// terminal has a light background. Available themes can be found at
 	// https://github.com/alecthomas/chroma/tree/master/styles
 	SyntaxHighlightLightTheme string
+
+	// TabLeftArrow is the string to render to indicate there are more tabs to the left
+	TabLeftArrow string
+	// TabRightArrow is the string to render to indicate there are more tabs to the right
+	TabRightArrow string
 }
 
 const DefaultThemePath = "~/.config/buoy/themes/default.json"
@@ -38,6 +43,8 @@ func LoadTheme(themePath string) (Theme, error) {
 		LogSearchHighlightColor:   DefaultColor,
 		SyntaxHighlightDarkTheme:  "nord",
 		SyntaxHighlightLightTheme: "monokailight",
+		TabRightArrow:             " > ",
+		TabLeftArrow:              " < ",
 	}
 	// If the specified theme file doesn't exist, use the default theme
 	if _, err := os.Stat(themePath); err != nil {
@@ -92,4 +99,12 @@ func (t *Theme) LogSearchHighlightStyle() lipgloss.Style {
 
 func (t *Theme) LogSearchModeStyle() lipgloss.Style {
 	return lipgloss.NewStyle().Italic(true).Faint(true)
+}
+
+func (t *Theme) TabArrowRight() string {
+	return t.TabArrowRight()
+}
+
+func (t *Theme) TabArrowLeft() string {
+	return t.TabArrowLeft()
 }

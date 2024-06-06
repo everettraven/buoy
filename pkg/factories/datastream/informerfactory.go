@@ -24,7 +24,7 @@ type InvalidPanelType struct {
 	error
 }
 
-type DatastreamFactoryFunc func(tea.Model) (Datastream, error)
+type DatastreamFactoryFunc func(interface{}) (Datastream, error)
 
 type datastreamFactory struct {
 	// informerFactoryFuncs is a list of functions that return informers

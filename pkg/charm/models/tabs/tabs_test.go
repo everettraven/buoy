@@ -1,15 +1,14 @@
-package models
+package tabs
 
 import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/everettraven/buoy/pkg/charm/styles"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTabberUpdate(t *testing.T) {
-	tabber := NewTabber(DefaultTabberKeys, styles.Theme{}, Tab{Name: "test", Model: nil}, Tab{Name: "test2", Model: nil})
+	tabber := New(DefaultTabberKeys, TabModelStyleOptions{}, Tab{Name: "test", Model: nil}, Tab{Name: "test2", Model: nil})
 
 	t.Log("navigate to next tab")
 	tabber.Update(tea.KeyMsg{Type: tea.KeyTab})

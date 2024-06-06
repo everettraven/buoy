@@ -5,15 +5,14 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/everettraven/buoy/pkg/charm/models/panels"
-	"github.com/everettraven/buoy/pkg/charm/styles"
+	"github.com/everettraven/buoy/pkg/charm/models/panels/table"
 	buoytypes "github.com/everettraven/buoy/pkg/types"
 )
 
 var _ PanelFactory = &Table{}
 
 type Table struct {
-	theme styles.Theme
+	theme table.Styles
 }
 
 func (t *Table) ModelForPanel(panel buoytypes.Panel) (tea.Model, error) {
@@ -22,6 +21,6 @@ func (t *Table) ModelForPanel(panel buoytypes.Panel) (tea.Model, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unmarshalling panel to table type: %s", err)
 	}
-	table := panels.NewTable(panels.DefaultTableKeys, tab, t.theme)
+	table := table.New(table.DefaultKeys, tab, t.theme)
 	return table, nil
 }

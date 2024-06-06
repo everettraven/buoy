@@ -1,4 +1,4 @@
-package panels
+package table
 
 import (
 	"bytes"
@@ -14,57 +14,64 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/everettraven/buoy/pkg/charm/styles"
 	buoytypes "github.com/everettraven/buoy/pkg/types"
 	"github.com/tidwall/gjson"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/cache"
-	"sigs.k8s.io/yaml"
 )
 
-type TableKeyMap struct {
+type KeyMap struct {
 	ViewModeToggle key.Binding
 }
 
 // ShortHelp returns keybindings to be shown in the mini help view. It's part
 // of the key.Map interface.
-func (k TableKeyMap) ShortHelp() []key.Binding {
+func (k KeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{}
 }
 
 // FullHelp returns keybindings for the expanded help view. It's part of the
 // key.Map interface.
-func (k TableKeyMap) FullHelp() [][]key.Binding {
+func (k KeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.ViewModeToggle},
 	}
 }
 
-var DefaultTableKeys = TableKeyMap{
+var DefaultKeys = KeyMap{
 	ViewModeToggle: key.NewBinding(
 		key.WithKeys("v"),
 		key.WithHelp("v", "toggle viewing contents of selected resource"),
 	),
 }
 
-const modeView = "view"
-const modeTable = "table"
+const (
+	modeView  = "view"
+	modeTable = "table"
+)
 
 type RowInfo struct {
 	Row        tbl.Row
 	Identifier *types.NamespacedName
-	// Is this necessary? Can the index change on different iterations?
-	Index int
+	Index      int
 }
 
-// Table is a tea.Model implementation
+type Styles struct {
+	SelectedRow          lipgloss.Style
+	SyntaxHighlightDark  string
+	SyntaxHighlightLight string
+}
+
+type ViewActionFunc func(row *RowInfo) (string, error)
+
+// TODO: Can some of the action logic be decoupled from this model?
+
+// Model is a tea.Model implementation
 // that represents a table panel
-type Table struct {
+type Model struct {
 	tableModel tbl.Model
-	lister     cache.GenericLister
-	scope      meta.RESTScopeName
 	viewport   viewport.Model
 	mode       string
 	mutex      *sync.Mutex
@@ -72,12 +79,13 @@ type Table struct {
 	columns    []buoytypes.Column
 	err        error
 	tempRows   []tbl.Row
-	keys       TableKeyMap
-	theme      styles.Theme
+	keys       KeyMap
 	table      *buoytypes.Table
+	styles     Styles
+	viewAction ViewActionFunc
 }
 
-func NewTable(keys TableKeyMap, table *buoytypes.Table, theme styles.Theme) *Table {
+func New(keys KeyMap, table *buoytypes.Table, styles Styles) *Model {
 	tblColumns := []string{}
 	width := 0
 	for _, column := range table.Columns {
@@ -85,10 +93,10 @@ func NewTable(keys TableKeyMap, table *buoytypes.Table, theme styles.Theme) *Tab
 		width += column.Width
 	}
 
-	tab := tbl.New(tblColumns, 100, 10)
-	tab.Styles.SelectedRow = theme.TableSelectedRowStyle()
+	tab := tbl.New(tblColumns, width, 10)
+	tab.Styles.SelectedRow = styles.SelectedRow
 
-	return &Table{
+	return &Model{
 		tableModel: tab,
 		viewport:   viewport.New(0, 0),
 		mode:       modeTable,
@@ -96,16 +104,16 @@ func NewTable(keys TableKeyMap, table *buoytypes.Table, theme styles.Theme) *Tab
 		rows:       map[types.UID]*RowInfo{},
 		columns:    table.Columns,
 		keys:       keys,
-		theme:      theme,
 		table:      table,
+		styles:     styles,
 	}
 }
 
-func (m *Table) Init() tea.Cmd {
+func (m *Model) Init() tea.Cmd {
 	return nil
 }
 
-func (m *Table) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -114,15 +122,16 @@ func (m *Table) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewport.Height = msg.Height / 2
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, DefaultTableKeys.ViewModeToggle):
+		case key.Matches(msg, DefaultKeys.ViewModeToggle):
 			switch m.mode {
 			case modeTable:
 				m.mode = modeView
-				vpContent, err := m.FetchContentForIndex(m.tableModel.Cursor())
+				row := m.FetchRowForIndex(m.tableModel.Cursor())
+				vpContent, err := m.viewAction(row)
 				if err != nil {
 					m.viewport.SetContent(err.Error())
 				} else {
-					m.viewport.SetContent(vpContent)
+					m.viewport.SetContent(highlight(vpContent, m.styles))
 				}
 			case modeView:
 				m.mode = modeTable
@@ -145,7 +154,7 @@ func (m *Table) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m *Table) View() string {
+func (m *Model) View() string {
 	if m.err != nil {
 		return m.err.Error()
 	}
@@ -159,7 +168,7 @@ func (m *Table) View() string {
 	}
 }
 
-func (m *Table) AddOrUpdate(u *unstructured.Unstructured) {
+func (m *Model) AddOrUpdate(u *unstructured.Unstructured) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	uid := u.GetUID()
@@ -181,14 +190,14 @@ func (m *Table) AddOrUpdate(u *unstructured.Unstructured) {
 	m.updateRows()
 }
 
-func (m *Table) DeleteRow(uid types.UID) {
+func (m *Model) DeleteRow(uid types.UID) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	delete(m.rows, uid)
 	m.updateRows()
 }
 
-func (m *Table) updateRows() {
+func (m *Model) updateRows() {
 	rows := []tbl.Row{}
 	indice := 0
 	for _, rowInfo := range m.rows {
@@ -199,31 +208,35 @@ func (m *Table) updateRows() {
 	m.tempRows = rows
 }
 
-func (m *Table) Columns() []buoytypes.Column {
+func (m *Model) Columns() []buoytypes.Column {
 	return m.columns
 }
 
-func (m *Table) Name() string {
+func (m *Model) Name() string {
 	return m.table.Name
 }
 
-func (m *Table) TableDefinition() *buoytypes.Table {
-	return m.table
+func (m *Model) GVK() schema.GroupVersionKind {
+	return schema.GroupVersionKind{
+		Group:   m.table.Group,
+		Version: m.table.Version,
+		Kind:    m.table.Kind,
+	}
 }
 
-func (m *Table) SetLister(lister cache.GenericLister) {
-	m.lister = lister
+func (m *Model) Namespace() string {
+	return m.table.Namespace
 }
 
-func (m *Table) SetScope(scope meta.RESTScopeName) {
-	m.scope = scope
+func (m *Model) LabelSelector() labels.Set {
+	return m.table.LabelSelector
 }
 
-func (m *Table) SetError(err error) {
+func (m *Model) SetError(err error) {
 	m.err = err
 }
 
-func (m *Table) FetchContentForIndex(index int) (string, error) {
+func (m *Model) FetchRowForIndex(index int) *RowInfo {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	var rowInfo *RowInfo
@@ -234,47 +247,14 @@ func (m *Table) FetchContentForIndex(index int) (string, error) {
 		}
 	}
 
-	if rowInfo == nil {
-		return "", fmt.Errorf("no row data found for selected row %d", index)
-	}
-
-	name := rowInfo.Identifier.String()
-	if m.scope == meta.RESTScopeNameRoot {
-		name = rowInfo.Identifier.Name
-	}
-
-	obj, err := m.lister.Get(name)
-	if err != nil {
-		return "", fmt.Errorf("fetching definition for %q: %w", name, err)
-	}
-
-	itemJSON, err := obj.(*unstructured.Unstructured).MarshalJSON()
-	if err != nil {
-		return "", fmt.Errorf("error marshalling item %q: %w", name, err)
-	}
-
-	itemYAML, err := yaml.JSONToYAML(itemJSON)
-	if err != nil {
-		return "", fmt.Errorf("converting JSON to YAML for item %q: %w", name, err)
-	}
-
-	theme := m.theme.SyntaxHighlightDarkTheme
-	if !lipgloss.HasDarkBackground() {
-		theme = m.theme.SyntaxHighlightLightTheme
-	}
-	rw := &bytes.Buffer{}
-	err = quick.Highlight(rw, string(itemYAML), "yaml", "terminal16m", theme)
-	if err != nil {
-		return "", fmt.Errorf("highlighting YAML for item %q: %w", name, err)
-	}
-	highlighted, err := io.ReadAll(rw)
-	if err != nil {
-		return "", fmt.Errorf("reading highlighted YAML for item %q: %w", name, err)
-	}
-	return string(highlighted), nil
+	return rowInfo
 }
 
-func (m *Table) Help() help.KeyMap {
+func (m *Model) SetViewActionFunc(vaf ViewActionFunc) {
+	m.viewAction = vaf
+}
+
+func (m *Model) Help() help.KeyMap {
 	return m.keys
 }
 
@@ -288,4 +268,22 @@ func getDotNotationValue(item map[string]interface{}, dotPath string) (interface
 		return "n/a", nil
 	}
 	return res.Value(), nil
+}
+
+func highlight(s string, styles Styles) string {
+	// attempt to perform syntax highlighting
+	theme := styles.SyntaxHighlightDark
+	if !lipgloss.HasDarkBackground() {
+		theme = styles.SyntaxHighlightLight
+	}
+	rw := &bytes.Buffer{}
+	err := quick.Highlight(rw, s, "yaml", "terminal16m", theme)
+	if err != nil {
+		return s
+	}
+	highlighted, err := io.ReadAll(rw)
+	if err != nil {
+		return s
+	}
+	return string(highlighted)
 }
