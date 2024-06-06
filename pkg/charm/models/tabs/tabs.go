@@ -1,4 +1,4 @@
-package models
+package tabs
 
 import (
 	"strings"
@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/everettraven/buoy/pkg/charm/styles"
+	"github.com/everettraven/buoy/pkg/charm/models/helper"
 )
 
 type Helper interface {
@@ -19,27 +19,46 @@ type Tab struct {
 	Model tea.Model
 }
 
-type Tabber struct {
+// TabModelStyleOptions is the set of style options that can be
+// used to configure the styles used by the TabModel
+type TabModelStyleOptions struct {
+	GapStyle      lipgloss.Style
+	ContentStyle  lipgloss.Style
+	SelectedStyle lipgloss.Style
+	TabStyle      lipgloss.Style
+	LeftArrow     string
+	RightArrow    string
+}
+
+type TabModel struct {
 	tabs     []Tab
 	selected int
 	keyMap   TabberKeyMap
 	width    int
-	theme    styles.Theme
+	styles   TabModelStyleOptions
+	pager    *pager
 }
 
-func NewTabber(keyMap TabberKeyMap, theme styles.Theme, tabs ...Tab) *Tabber {
-	return &Tabber{
+func New(keyMap TabberKeyMap, styles TabModelStyleOptions, tabs ...Tab) *TabModel {
+	return &TabModel{
 		tabs:   tabs,
 		keyMap: keyMap,
-		theme:  theme,
+		styles: styles,
+		pager: &pager{
+			tabRightArrow: styles.GapStyle.Render(styles.RightArrow),
+			tabLeftArrow:  styles.GapStyle.Render(styles.LeftArrow),
+			pages:         []page{},
+			selectedStyle: styles.SelectedStyle,
+			tabStyle:      styles.TabStyle,
+		},
 	}
 }
 
-func (t *Tabber) Init() tea.Cmd {
+func (t *TabModel) Init() tea.Cmd {
 	return nil
 }
 
-func (t *Tabber) Update(msg tea.Msg) (*Tabber, tea.Cmd) {
+func (t *TabModel) Update(msg tea.Msg) (*TabModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
@@ -72,36 +91,24 @@ func (t *Tabber) Update(msg tea.Msg) (*Tabber, tea.Cmd) {
 	return t, cmd
 }
 
-func (t *Tabber) View() string {
-	tabRightArrow := t.theme.TabGap().Render("  ▶  ")
-	tabLeftArrow := t.theme.TabGap().Render("  ◀  ")
-
-	pager := &pager{
-		tabRightArrow: tabRightArrow,
-		tabLeftArrow:  tabLeftArrow,
-		pages:         []page{},
-		theme:         t.theme,
-	}
-	pager.setPages(t.tabs, t.selected, t.width)
-
-	tabBlock := pager.renderForSelectedTab(t.selected)
+func (t *TabModel) View() string {
+	t.pager.setPages(t.tabs, t.selected, t.width)
+	tabBlock := t.pager.renderForSelectedTab(t.selected)
 	// gap is a repeating of the spaces so that the bottom border continues the entire width
 	// of the terminal. This allows it to look like a proper set of tabs
-	gap := t.theme.TabGap().Render(strings.Repeat(" ", max(0, t.width-lipgloss.Width(tabBlock)-2)))
+	gap := t.styles.GapStyle.Render(strings.Repeat(" ", max(0, t.width-lipgloss.Width(tabBlock)-2)))
 	tabsWithBorder := lipgloss.JoinHorizontal(lipgloss.Bottom, tabBlock, gap)
-	content := t.theme.ContentStyle().Render(t.tabs[t.selected].Model.View())
+	content := t.styles.ContentStyle.Render(t.tabs[t.selected].Model.View())
 	return lipgloss.JoinVertical(0, tabsWithBorder, content)
 }
 
-func (t *Tabber) Help() help.KeyMap {
+func (t *TabModel) Help() help.KeyMap {
 	helps := []help.KeyMap{}
 	if helper, ok := t.tabs[t.selected].Model.(Helper); ok {
 		helps = append(helps, helper.Help())
 	}
 
-	return CompositeHelpKeyMap{
-		helps: append(helps, t.keyMap),
-	}
+	return helper.NewCompositeHelpKeyMap(helps...)
 }
 
 type TabberKeyMap struct {
@@ -144,7 +151,8 @@ type pager struct {
 	pages         []page
 	tabRightArrow string
 	tabLeftArrow  string
-	theme         styles.Theme
+	selectedStyle lipgloss.Style
+	tabStyle      lipgloss.Style
 }
 
 func (p *pager) renderForSelectedTab(selected int) string {
@@ -168,9 +176,9 @@ func (p *pager) setPages(tabs []Tab, selected int, width int) {
 	tempTab := ""
 	tempPage := page{start: 0, tabs: []string{}}
 	for i, tab := range tabs {
-		renderedTab := p.theme.TabStyle().Render(tab.Name)
+		renderedTab := p.tabStyle.Render(tab.Name)
 		if i == selected {
-			renderedTab = p.theme.SelectedTabStyle().Render(tab.Name)
+			renderedTab = p.selectedStyle.Render(tab.Name)
 		}
 		tempTab = lipgloss.JoinHorizontal(lipgloss.Top, tempTab, renderedTab)
 		joined := lipgloss.JoinHorizontal(lipgloss.Bottom, p.tabLeftArrow, tempTab, p.tabRightArrow)

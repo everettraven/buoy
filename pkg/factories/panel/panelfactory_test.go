@@ -3,7 +3,9 @@ package panel
 import (
 	"testing"
 
-	"github.com/everettraven/buoy/pkg/charm/models/panels"
+	"github.com/everettraven/buoy/pkg/charm/models/panels/item"
+	"github.com/everettraven/buoy/pkg/charm/models/panels/logs"
+	"github.com/everettraven/buoy/pkg/charm/models/panels/table"
 	"github.com/everettraven/buoy/pkg/charm/styles"
 	"github.com/everettraven/buoy/pkg/types"
 	"github.com/stretchr/testify/assert"
@@ -51,7 +53,7 @@ func TestTablePanel(t *testing.T) {
 	tbl, err := panelFactory.ModelForPanel(*panel)
 	assert.NoError(t, err)
 	assert.NotNil(t, tbl)
-	assert.IsType(t, &panels.Table{}, tbl)
+	assert.IsType(t, &table.Model{}, tbl)
 }
 
 func TestItemPanel(t *testing.T) {
@@ -64,7 +66,7 @@ func TestItemPanel(t *testing.T) {
 		"key": {
 			"namespace": "kube-system",
 			"name": "kube-apiserver-kind-control-plane"
-		} 
+		}
 	}`
 
 	panel := &types.Panel{}
@@ -72,10 +74,10 @@ func TestItemPanel(t *testing.T) {
 	assert.NoError(t, err)
 
 	panelFactory := NewPanelFactory(styles.Theme{})
-	item, err := panelFactory.ModelForPanel(*panel)
+	itemModel, err := panelFactory.ModelForPanel(*panel)
 	assert.NoError(t, err)
-	assert.NotNil(t, item)
-	assert.IsType(t, &panels.Item{}, item)
+	assert.NotNil(t, itemModel)
+	assert.IsType(t, &item.Model{}, itemModel)
 }
 
 func TestLogPanel(t *testing.T) {
@@ -88,7 +90,7 @@ func TestLogPanel(t *testing.T) {
 		"key": {
 			"namespace": "kube-system",
 			"name": "kube-apiserver-kind-control-plane"
-		} 
+		}
 	}`
 
 	panel := &types.Panel{}
@@ -99,5 +101,5 @@ func TestLogPanel(t *testing.T) {
 	log, err := panelFactory.ModelForPanel(*panel)
 	assert.NoError(t, err)
 	assert.NotNil(t, log)
-	assert.IsType(t, &panels.Logs{}, log)
+	assert.IsType(t, &logs.Model{}, log)
 }

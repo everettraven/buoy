@@ -1,26 +1,25 @@
-package models
+package dashboard
 
 import (
 	"testing"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/everettraven/buoy/pkg/charm/models/panels"
-	"github.com/everettraven/buoy/pkg/charm/styles"
+	"github.com/everettraven/buoy/pkg/charm/models/panels/item"
 	"github.com/everettraven/buoy/pkg/types"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDashboardUpdate(t *testing.T) {
 	panels := []tea.Model{
-		panels.NewItem(types.Item{
+		item.New(types.Item{
 			PanelBase: types.PanelBase{
 				Name: "test",
 			},
-		}, viewport.New(10, 10), styles.Theme{}),
+		}, viewport.New(10, 10), item.Styles{}),
 	}
 
-	d := NewDashboard(DefaultDashboardKeys, styles.Theme{}, panels...)
+	d := New(DefaultDashboardKeys, DashboardStyleOptions{}, panels...)
 
 	t.Log("WindowSizeUpdate")
 	d.Update(tea.WindowSizeMsg{Width: 50, Height: 50})

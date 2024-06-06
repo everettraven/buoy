@@ -1,4 +1,4 @@
-package panels
+package logs
 
 import (
 	"fmt"
@@ -11,13 +11,14 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/everettraven/buoy/pkg/charm/styles"
 	"github.com/everettraven/buoy/pkg/types"
 	"github.com/muesli/reflow/wrap"
 	"github.com/sahilm/fuzzy"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	apimachtypes "k8s.io/apimachinery/pkg/types"
 )
 
-type LogsKeyMap struct {
+type KeyMap struct {
 	Search       key.Binding
 	SubmitSearch key.Binding
 	QuitSearch   key.Binding
@@ -26,19 +27,19 @@ type LogsKeyMap struct {
 
 // ShortHelp returns keybindings to be shown in the mini help view. It's part
 // of the key.Map interface.
-func (k LogsKeyMap) ShortHelp() []key.Binding {
+func (k KeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{}
 }
 
 // FullHelp returns keybindings for the expanded help view. It's part of the
 // key.Map interface.
-func (k LogsKeyMap) FullHelp() [][]key.Binding {
+func (k KeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Search, k.SubmitSearch, k.QuitSearch, k.ToggleStrict},
 	}
 }
 
-var DefaultLogsKeys = LogsKeyMap{
+var DefaultKeys = KeyMap{
 	Search: key.NewBinding(
 		key.WithKeys("/"),
 		key.WithHelp("/", "open a prompt to search logs"),
@@ -61,28 +62,35 @@ const modeLogs = "logs"
 const modeSearching = "searching"
 const modeSearched = "searched"
 
-// Logs is a tea.Model implementation
-// that represents an item panel
-type Logs struct {
+type Styles struct {
+	SearchPrompt              string
+	SearchPlaceholder         string
+	SearchModeStyle           lipgloss.Style
+	SearchMatchHighlightStyle lipgloss.Style
+}
+
+// Model is a tea.Model implementation
+// that can be used to view logs
+type Model struct {
 	viewport       viewport.Model
 	searchbar      textinput.Model
 	mutex          *sync.Mutex
 	content        string
 	contentUpdated bool
 	mode           string
-	keys           LogsKeyMap
+	keys           KeyMap
 	strictSearch   bool
-	theme          styles.Theme
+	theme          Styles
 	log            *types.Logs
 	err            error
 }
 
-func NewLogs(keys LogsKeyMap, log *types.Logs, theme styles.Theme) *Logs {
+func New(keys KeyMap, log *types.Logs, theme Styles) *Model {
 	searchbar := textinput.New()
-	searchbar.Prompt = "> "
-	searchbar.Placeholder = "search term"
+	searchbar.Prompt = theme.SearchPrompt
+	searchbar.Placeholder = theme.SearchPlaceholder
 	vp := viewport.New(10, 10)
-	return &Logs{
+	return &Model{
 		viewport:  vp,
 		searchbar: searchbar,
 		log:       log,
@@ -94,9 +102,9 @@ func NewLogs(keys LogsKeyMap, log *types.Logs, theme styles.Theme) *Logs {
 	}
 }
 
-func (m *Logs) Init() tea.Cmd { return nil }
+func (m *Model) Init() tea.Cmd { return nil }
 
-func (m *Logs) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	var cmd tea.Cmd
@@ -150,7 +158,7 @@ func (m *Logs) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m *Logs) View() string {
+func (m *Model) View() string {
 	if m.err != nil {
 		return m.err.Error()
 	}
@@ -159,7 +167,7 @@ func (m *Logs) View() string {
 	if m.strictSearch {
 		searchMode = "strict"
 	}
-	searchModeOutput := m.theme.LogSearchModeStyle().Render(fmt.Sprintf("search mode: %s", searchMode))
+	searchModeOutput := m.theme.SearchModeStyle.Render(fmt.Sprintf("search mode: %s", searchMode))
 
 	if m.mode == modeSearching {
 		return lipgloss.JoinVertical(lipgloss.Top,
@@ -178,26 +186,38 @@ func (m *Logs) View() string {
 	return m.viewport.View()
 }
 
-func (m *Logs) Help() help.KeyMap {
+func (m *Model) Help() help.KeyMap {
 	return m.keys
 }
 
-func (m *Logs) AddContent(content string) {
+func (m *Model) AddContent(content string) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	m.content = strings.Join([]string{m.content, content}, "\n")
 	m.contentUpdated = true
 }
 
-func (m *Logs) Name() string {
+func (m *Model) Name() string {
 	return m.log.Name
 }
 
-func (m *Logs) LogDefinition() *types.Logs {
-	return m.log
+func (m *Model) Key() apimachtypes.NamespacedName {
+	return m.log.Key
 }
 
-func (m *Logs) SetError(err error) {
+func (m *Model) GVK() schema.GroupVersionKind {
+	return schema.GroupVersionKind{
+		Group:   m.log.Group,
+		Version: m.log.Version,
+		Kind:    m.log.Kind,
+	}
+}
+
+func (m *Model) Container() string {
+	return m.log.Container
+}
+
+func (m *Model) SetError(err error) {
 	m.err = err
 }
 
@@ -205,15 +225,15 @@ func (m *Logs) SetError(err error) {
 // and returns a string with the matching log lines
 // and the matched term highlighted. Uses fuzzy search
 // if strict search is not enabled. Wraps logs to the width of the viewport.
-func (m *Logs) searchLogs() string {
+func (m *Model) searchLogs() string {
 	term := m.searchbar.Value()
 	wrap := m.viewport.Width
 	strict := m.strictSearch
 	splitLogs := strings.Split(m.content, "\n")
 	if strict {
-		return strictMatchLogs(term, splitLogs, m.viewport.Width, m.theme.LogSearchHighlightStyle())
+		return strictMatchLogs(term, splitLogs, m.viewport.Width, m.theme.SearchMatchHighlightStyle)
 	}
-	return fuzzyMatchLogs(term, splitLogs, wrap, m.theme.LogSearchHighlightStyle())
+	return fuzzyMatchLogs(term, splitLogs, wrap, m.theme.SearchMatchHighlightStyle)
 }
 
 func strictMatchLogs(searchTerm string, logLines []string, wrap int, style lipgloss.Style) string {

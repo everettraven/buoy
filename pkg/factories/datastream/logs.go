@@ -7,14 +7,13 @@ import (
 	"fmt"
 	"io"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/everettraven/buoy/pkg/charm/models/panels"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 )
@@ -23,46 +22,47 @@ var _ Datastream = &logDatastream{}
 
 type logDatastream struct {
 	logReadCloser io.ReadCloser
-	logPanel      *panels.Logs
+	contentAdder  ContentAdder
 }
 
 func (l *logDatastream) Run(stopCh <-chan struct{}) {
-	go streamLogs(l.logReadCloser, l.logPanel)
+	go streamLogs(l.logReadCloser, l.contentAdder)
+}
+
+type Log interface {
+	Key() types.NamespacedName
+	GVK() schema.GroupVersionKind
+	Container() string
+	ContentAdder
 }
 
 func LogsDatastreamFunc(typedClient *kubernetes.Clientset, dynamicClient *dynamic.DynamicClient, restMapper meta.RESTMapper) DatastreamFactoryFunc {
-	return func(m tea.Model) (Datastream, error) {
-		if _, ok := m.(*panels.Logs); !ok {
-			return nil, &InvalidPanelType{fmt.Errorf("model is not of type *panels.Logs")}
-		}
-		logs := m.(*panels.Logs)
-		logsPanel := logs.LogDefinition()
-		gvk := schema.GroupVersionKind{
-			Group:   logsPanel.Group,
-			Version: logsPanel.Version,
-			Kind:    logsPanel.Kind,
+	return func(obj interface{}) (Datastream, error) {
+		log, ok := obj.(Log)
+		if !ok {
+			return nil, &InvalidPanelType{fmt.Errorf("object does not implement Log interface. Unable to determine how to fetch logs")}
 		}
 
-		if gvk == v1.SchemeGroupVersion.WithKind("Pod") {
-			pod, err := typedClient.CoreV1().Pods(logsPanel.Key.Namespace).Get(context.Background(), logsPanel.Key.Name, metav1.GetOptions{})
+		if log.GVK() == v1.SchemeGroupVersion.WithKind("Pod") {
+			pod, err := typedClient.CoreV1().Pods(log.Key().Namespace).Get(context.Background(), log.Key().Name, metav1.GetOptions{})
 			if err != nil {
 				return nil, fmt.Errorf("error getting pod: %w", err)
 			}
-			rc, err := logsForPod(typedClient, pod, logsPanel.Container)
+			rc, err := logsForPod(typedClient, pod, log.Container())
 			if err != nil {
 				return nil, fmt.Errorf("error getting logs for pod: %w", err)
 			}
 			return &logDatastream{
 				logReadCloser: rc,
-				logPanel:      logs,
+				contentAdder:  log,
 			}, nil
 		}
 
-		mapping, err := restMapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+		mapping, err := restMapper.RESTMapping(log.GVK().GroupKind(), log.GVK().Version)
 		if err != nil {
 			return nil, fmt.Errorf("error creating resource mapping: %w", err)
 		}
-		u, err := dynamicClient.Resource(mapping.Resource).Namespace(logsPanel.Key.Namespace).Get(context.Background(), logsPanel.Key.Name, metav1.GetOptions{})
+		u, err := dynamicClient.Resource(mapping.Resource).Namespace(log.Key().Namespace).Get(context.Background(), log.Key().Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("error getting object: %w", err)
 		}
@@ -79,13 +79,13 @@ func LogsDatastreamFunc(typedClient *kubernetes.Clientset, dynamicClient *dynami
 			return nil, fmt.Errorf("no pods found for object")
 		}
 		pod := &pods.Items[0]
-		rc, err := logsForPod(typedClient, pod, logsPanel.Container)
+		rc, err := logsForPod(typedClient, pod, log.Container())
 		if err != nil {
 			return nil, fmt.Errorf("error getting logs for pod: %w", err)
 		}
 		return &logDatastream{
 			logReadCloser: rc,
-			logPanel:      logs,
+			contentAdder:  log,
 		}, nil
 	}
 }
@@ -110,10 +110,14 @@ func getPodSelectorForUnstructured(u *unstructured.Unstructured) (labels.Selecto
 	return metav1.LabelSelectorAsSelector(sel)
 }
 
-func streamLogs(rc io.ReadCloser, logPanel *panels.Logs) {
+type ContentAdder interface {
+	AddContent(string)
+}
+
+func streamLogs(rc io.ReadCloser, ca ContentAdder) {
 	scanner := bufio.NewScanner(rc)
 	for scanner.Scan() {
-		logPanel.AddContent(scanner.Text())
+		ca.AddContent(scanner.Text())
 	}
 }
 
