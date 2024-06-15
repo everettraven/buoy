@@ -112,7 +112,7 @@ func New(keys KeyMap, table *buoytypes.Table, styles Styles) *Model {
 		SelectableRows(false).
 		HighlightStyle(styles.SelectedRow).
 		WithBaseStyle(styles.TextAlignment).
-		WithPageSize(table.PageSize).
+		WithPageSize(pageSize).
 		WithHorizontalFreezeColumnCount(1).
 		WithMultiline(true).
 		WithTargetWidth(width).
