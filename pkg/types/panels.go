@@ -40,6 +40,7 @@ type Table struct {
 	Columns       []Column          `json:"columns" yaml:"columns"`
 	Namespace     string            `json:"namespace" yaml:"namespace"`
 	LabelSelector map[string]string `json:"labelSelector" yaml:"labelSelector"`
+	PageSize      int               `json:"pageSize" yaml:"pageSize"`
 }
 
 type Column struct {

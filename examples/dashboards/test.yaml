@@ -4,19 +4,26 @@ panels:
     version: v1
     kind: Pod
     type: table
+    pageSize: 3
     columns:
       - header: Namespace
         path: metadata.namespace
+        width: 15
       - header: Name
         path: metadata.name
+        width: 15
       - header: Labels
         path: metadata.labels
+        width: 30
       - header: Ready Condition
         path: status.conditions.#(type==Ready)
+        width: 30
       - header: Phase
         path: status.phase
+        width: 10
       - header: Containers
         path: spec.containers.#.name
+        width: 20
   - name: Kube-System Pods with label tier=control-plane
     group: ""
     version: v1

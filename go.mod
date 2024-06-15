@@ -3,11 +3,11 @@ module github.com/everettraven/buoy
 go 1.21
 
 require (
-	github.com/calyptia/go-bubble-table v0.2.1
 	github.com/charmbracelet/bubbles v0.16.1
 	github.com/charmbracelet/bubbletea v0.26.1
 	github.com/charmbracelet/lipgloss v0.10.0
 	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be
+	github.com/evertras/bubble-table v0.16.0
 	github.com/sahilm/fuzzy v0.1.0
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.2
@@ -47,9 +47,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/juju/ansiterm v0.0.0-20210929141451-8b71cc96ebdc // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
-	github.com/lunixbochs/vtclean v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
