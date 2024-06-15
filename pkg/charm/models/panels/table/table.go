@@ -8,18 +8,27 @@ import (
 	"sync"
 
 	"github.com/alecthomas/chroma/quick"
-	tbl "github.com/calyptia/go-bubble-table"
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	buoytypes "github.com/everettraven/buoy/pkg/types"
+	tbl "github.com/evertras/bubble-table/table"
 	"github.com/tidwall/gjson"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+)
+
+const (
+	modeView  = "view"
+	modeTable = "table"
+	// TODO: These default sizes should probably
+	// be configurable
+	defaultPageSize    = 5
+	defaultColumnWidth = 20
 )
 
 type KeyMap struct {
@@ -36,7 +45,9 @@ func (k KeyMap) ShortHelp() []key.Binding {
 // key.Map interface.
 func (k KeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.ViewModeToggle},
+		{
+			k.ViewModeToggle,
+		},
 	}
 }
 
@@ -47,11 +58,6 @@ var DefaultKeys = KeyMap{
 	),
 }
 
-const (
-	modeView  = "view"
-	modeTable = "table"
-)
-
 type RowInfo struct {
 	Row        tbl.Row
 	Identifier *types.NamespacedName
@@ -60,13 +66,12 @@ type RowInfo struct {
 
 type Styles struct {
 	SelectedRow          lipgloss.Style
+	TextAlignment        lipgloss.Style
 	SyntaxHighlightDark  string
 	SyntaxHighlightLight string
 }
 
 type ViewActionFunc func(row *RowInfo) (string, error)
-
-// TODO: Can some of the action logic be decoupled from this model?
 
 // Model is a tea.Model implementation
 // that represents a table panel
@@ -86,15 +91,32 @@ type Model struct {
 }
 
 func New(keys KeyMap, table *buoytypes.Table, styles Styles) *Model {
-	tblColumns := []string{}
+	tblColumns := []tbl.Column{}
 	width := 0
 	for _, column := range table.Columns {
-		tblColumns = append(tblColumns, column.Header)
-		width += column.Width
+		if column.Width > 0 {
+			tblColumns = append(tblColumns, tbl.NewColumn(column.Header, column.Header, column.Width))
+			width += column.Width
+		} else {
+			tblColumns = append(tblColumns, tbl.NewFlexColumn(column.Header, column.Header, 1))
+			width += defaultColumnWidth
+		}
 	}
 
-	tab := tbl.New(tblColumns, width, 10)
-	tab.Styles.SelectedRow = styles.SelectedRow
+	pageSize := table.PageSize
+	if pageSize <= 0 {
+		pageSize = defaultPageSize
+	}
+
+	tab := tbl.New(tblColumns).
+		SelectableRows(false).
+		HighlightStyle(styles.SelectedRow).
+		WithBaseStyle(styles.TextAlignment).
+		WithPageSize(pageSize).
+		WithHorizontalFreezeColumnCount(1).
+		WithMultiline(true).
+		WithTargetWidth(width).
+		BorderRounded()
 
 	return &Model{
 		tableModel: tab,
@@ -117,7 +139,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.tableModel.SetSize(msg.Width, msg.Height/2)
+		m.tableModel = m.tableModel.WithMaxTotalWidth(msg.Width)
 		m.viewport.Width = msg.Width
 		m.viewport.Height = msg.Height / 2
 	case tea.KeyMsg:
@@ -126,7 +148,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch m.mode {
 			case modeTable:
 				m.mode = modeView
-				row := m.FetchRowForIndex(m.tableModel.Cursor())
+				m.tableModel = m.tableModel.Focused(false)
+				row := m.FetchRowForIndex(m.tableModel.GetHighlightedRowIndex())
 				vpContent, err := m.viewAction(row)
 				if err != nil {
 					m.viewport.SetContent(err.Error())
@@ -136,17 +159,19 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case modeView:
 				m.mode = modeTable
 				m.viewport.SetContent("")
+				m.tableModel = m.tableModel.Focused(true)
 			}
 		}
 	}
 
 	if len(m.tempRows) > 0 {
-		m.tableModel.SetRows(m.tempRows)
+		m.tableModel = m.tableModel.WithRows(m.tempRows)
 		m.tempRows = []tbl.Row{}
 	}
 
 	switch m.mode {
 	case modeTable:
+		m.tableModel = m.tableModel.Focused(true)
 		m.tableModel, cmd = m.tableModel.Update(msg)
 	case modeView:
 		m.viewport, cmd = m.viewport.Update(msg)
@@ -172,16 +197,17 @@ func (m *Model) AddOrUpdate(u *unstructured.Unstructured) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	uid := u.GetUID()
-	row := tbl.SimpleRow{}
+	rowData := tbl.RowData{}
 	for _, column := range m.Columns() {
 		val, err := getDotNotationValue(u.Object, column.Path)
 		if err != nil {
 			m.SetError(err)
 			break
 		}
-
-		row = append(row, fmt.Sprint(val))
+		rowData[column.Header] = val
 	}
+	row := tbl.NewRow(rowData)
+	row = row.WithStyle(m.styles.TextAlignment)
 
 	m.rows[uid] = &RowInfo{
 		Row:        row,
